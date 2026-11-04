@@ -47,7 +47,7 @@ export function setUnauthorizedHandler(handler: (() => void) | null) {
 }
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   /** false para rutas públicas (sin token). */
   auth?: boolean;
@@ -122,4 +122,5 @@ export const apiClient = {
   get: <T>(path: string, opts?: Omit<RequestOptions, 'method' | 'body'>) => apiRequest<T>(path, { ...opts, method: 'GET' }),
   post: <T>(path: string, body: unknown) => apiRequest<T>(path, { method: 'POST', body }),
   put: <T>(path: string, body: unknown) => apiRequest<T>(path, { method: 'PUT', body }),
+  patch: <T>(path: string, body: unknown) => apiRequest<T>(path, { method: 'PATCH', body }),
 };
