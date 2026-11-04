@@ -11,6 +11,7 @@ import { EmptyState } from '../components/LoadState';
 import { Alert } from '../components/Alert';
 import { RouteStrip } from '../components/RouteStrip';
 import { Screen } from '../components/Screen';
+import { StatusBadge } from '../components/StatusBadge';
 import { TopBar } from '../components/TopBar';
 import { useAsync } from '../hooks/useAsync';
 import { useCiudades } from '../hooks/useCiudades';
@@ -53,10 +54,10 @@ export function ViajerosDisponiblesScreen() {
     setSearching(true);
     try {
       const viajes = await viajesApi.disponiblesEnRuta(ruta.origen, ruta.destino);
-      const ajenos = viajes
-        .filter((v) => v.uid !== user?.uid)
-        .sort((a, b) => (a.fechaViaje ?? '').localeCompare(b.fechaViaje ?? ''));
-      setResultado({ ruta, viajes: ajenos });
+      // Se incluyen también tus propios viajes (marcados «Tu viaje»): si usas una sola cuenta de remitente y
+      // viajero, es la única forma de comprobar que la coincidencia funciona.
+      const ordenados = [...viajes].sort((a, b) => (a.fechaViaje ?? '').localeCompare(b.fechaViaje ?? ''));
+      setResultado({ ruta, viajes: ordenados });
     } catch (err) {
       setSearchError(errorMessage(err));
     } finally {
@@ -166,8 +167,11 @@ export function ViajerosDisponiblesScreen() {
                         {initials(nombre, resto.join(' '))}
                       </span>
                       <div className="flex min-w-0 flex-col">
-                        <span className="truncate text-title-md font-bold text-on-surface">
-                          {v.nombreUsuario || 'Viajero'}
+                        <span className="flex items-center gap-2">
+                          <span className="truncate text-title-md font-bold text-on-surface">
+                            {v.nombreUsuario || 'Viajero'}
+                          </span>
+                          {v.uid === user?.uid && <StatusBadge tone="info">Tu viaje</StatusBadge>}
                         </span>
                         <span className="flex items-center gap-1 text-label-md text-on-surface-variant">
                           <Icon name="calendar_today" className="text-[14px]" />

@@ -76,6 +76,39 @@ export const ETIQUETA_ENCOMIENDA: Record<EstadoEncomienda, string> = {
   recibida: 'Recibida',
 };
 
+/** Quita las tildes conservando mayúsculas: "Bogotá" → "Bogota". */
+export function sinTildes(texto: string): string {
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+/**
+ * El backend compara ciudades sin distinguir mayúsculas pero SÍ distinguiendo tildes ("Bogotá" no encuentra
+ * "Bogota"), y hay datos guardados de las dos formas. Para no perder coincidencias se consulta con ambas.
+ */
+export function variantes(texto: string): string[] {
+  const limpio = texto.trim();
+  return [...new Set([limpio, sinTildes(limpio)])];
+}
+
+/**
+ * Consulta una ruta con todas las combinaciones de tildes de origen/destino y une los resultados sin repetir
+ * (`clave` identifica un elemento). Si todas las consultas fallan, propaga el primer error.
+ */
+export async function consultarRuta<T>(
+  origen: string,
+  destino: string,
+  consultar: (o: string, d: string) => Promise<T[]>,
+  clave: (item: T) => string,
+): Promise<T[]> {
+  const pares = variantes(origen).flatMap((o) => variantes(destino).map((d) => [o, d] as const));
+  const resultados = await Promise.allSettled(pares.map(([o, d]) => consultar(o, d)));
+  const ok = resultados.filter((r): r is PromiseFulfilledResult<T[]> => r.status === 'fulfilled');
+  if (ok.length === 0) throw (resultados[0] as PromiseRejectedResult).reason;
+  const vistos = new Map<string, T>();
+  for (const r of ok) for (const item of r.value) if (!vistos.has(clave(item))) vistos.set(clave(item), item);
+  return [...vistos.values()];
+}
+
 /** Identificador corto para mostrar: "#ENC-84920A" (últimos 6 caracteres del _id). */
 export function idCorto(id: string): string {
   return `#ENC-${id.slice(-6).toUpperCase()}`;
@@ -105,3 +138,4 @@ export function agruparEncomiendas(lista: Encomienda[]): Record<EstadoEncomienda
   for (const e of lista) (grupos[e.estado] ?? grupos.disponible).push(e);
   return grupos;
 }
+

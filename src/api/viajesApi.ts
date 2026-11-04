@@ -1,3 +1,4 @@
+import { consultarRuta } from '../utils/envios';
 import { apiClient } from './apiClient';
 
 export type EstadoViaje = 'disponible' | 'completado' | 'cancelado' | 'contactado';
@@ -38,13 +39,19 @@ export interface ViajeDisponible {
 
 export const viajesApi = {
   /** GET /api/viajes/disponibles — viajes disponibles de otros usuarios en una ruta (pública). */
-  disponiblesEnRuta: async (ciudadOrigen: string, ciudadDestino: string) =>
-    asList<ViajeDisponible>(
-      await apiClient.get<unknown>(
-        `/api/viajes/disponibles?ciudadOrigen=${encodeURIComponent(ciudadOrigen)}&ciudadDestino=${encodeURIComponent(ciudadDestino)}`,
-        { auth: false },
-      ),
-      'viajes',
+  disponiblesEnRuta: (ciudadOrigen: string, ciudadDestino: string) =>
+    consultarRuta(
+      ciudadOrigen,
+      ciudadDestino,
+      async (o, d) =>
+        asList<ViajeDisponible>(
+          await apiClient.get<unknown>(
+            `/api/viajes/disponibles?ciudadOrigen=${encodeURIComponent(o)}&ciudadDestino=${encodeURIComponent(d)}`,
+            { auth: false },
+          ),
+          'viajes',
+        ),
+      (v) => `${v.uid}|${v.fechaViaje}|${v.ciudadOrigen}|${v.ciudadDestino}`,
     ),
   /** POST /api/viajes — 400 si el usuario ya tiene un viaje disponible. */
   crear: (data: NuevoViaje) => apiClient.post<Viaje>('/api/viajes', data),

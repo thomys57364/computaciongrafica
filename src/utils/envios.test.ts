@@ -7,8 +7,10 @@ import {
   formatearFecha,
   formatearValor,
   fechaMinimaViaje,
+  consultarRuta,
   idCorto,
   rutasUnicas,
+  variantes,
   normalizarVuelo,
   resolverCiudad,
   viajeActivo,
@@ -81,6 +83,43 @@ describe('Utilidades de envíos', () => {
       { origen: 'Bogotá', destino: 'Miami' },
       { origen: 'Cali', destino: 'Madrid' },
     ]);
+  });
+
+  it('genera variantes con y sin tildes', () => {
+    expect(variantes('Bogotá')).toEqual(['Bogotá', 'Bogota']);
+    expect(variantes(' Cali ')).toEqual(['Cali']);
+  });
+
+  it('consulta todas las variantes y une los resultados sin repetir', async () => {
+    const llamadas: string[] = [];
+    const datos: Record<string, { id: string }[]> = {
+      'Bogotá>Miami': [{ id: 'a' }],
+      'Bogota>Miami': [{ id: 'a' }, { id: 'b' }],
+    };
+    const r = await consultarRuta(
+      'Bogotá',
+      'Miami',
+      async (o, d) => {
+        llamadas.push(`${o}>${d}`);
+        return datos[`${o}>${d}`] ?? [];
+      },
+      (x) => x.id,
+    );
+    expect(llamadas).toHaveLength(2);
+    expect(r.map((x) => x.id)).toEqual(['a', 'b']);
+  });
+
+  it('si todas las consultas fallan propaga el error; si una funciona, la usa', async () => {
+    await expect(
+      consultarRuta('Bogotá', 'Miami', async () => Promise.reject(new Error('caído')), (x: { id: string }) => x.id),
+    ).rejects.toThrow('caído');
+    const r = await consultarRuta(
+      'Bogotá',
+      'Miami',
+      async (o) => (o === 'Bogota' ? [{ id: 'z' }] : Promise.reject(new Error('x'))),
+      (x) => x.id,
+    );
+    expect(r).toEqual([{ id: 'z' }]);
   });
 
   it('ordena y limpia la lista de ciudades', () => {

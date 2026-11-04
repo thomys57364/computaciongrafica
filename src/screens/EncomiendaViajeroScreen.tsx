@@ -35,7 +35,7 @@ export function EncomiendaViajeroScreen() {
     let encomienda: Encomienda | null = fromList && fromList._id === id ? fromList : null;
     // Si se abrió el enlace directamente (sin pasar por la lista) se busca en la ruta del viaje activo.
     if (!encomienda && activo && id) {
-      const { disponibles, tomadas } = await encomiendasApi.buscar(activo.ciudadOrigen, activo.ciudadDestino);
+      const { disponibles, tomadas } = await encomiendasApi.enRuta(activo.ciudadOrigen, activo.ciudadDestino);
       encomienda = [...disponibles, ...tomadas].find((e) => e._id === id) ?? null;
     }
     return { activo, encomienda };

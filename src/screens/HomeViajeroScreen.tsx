@@ -24,7 +24,7 @@ export function HomeViajeroScreen() {
   const { data, loading, error, reload } = useAsync(async () => {
     const activo = viajeActivo(await viajesApi.listar());
     const { disponibles, tomadas } = activo
-      ? await encomiendasApi.buscar(activo.ciudadOrigen, activo.ciudadDestino)
+      ? await encomiendasApi.enRuta(activo.ciudadOrigen, activo.ciudadDestino)
       : { disponibles: [], tomadas: [] };
     return { activo, encomiendas: disponibles, tomadas };
   });
@@ -109,7 +109,7 @@ export function HomeViajeroScreen() {
                     Cuando un remitente publique un envío en tu ruta, lo verás aquí.
                   </EmptyState>
                 ) : (
-                  encomiendas.map((e) => <EncomiendaCard key={e._id} e={e} onOpen={() => verDetalle(e)} />)
+                  encomiendas.map((e) => <EncomiendaCard key={e._id} e={e} onOpen={() => verDetalle(e)} propia={e.uid === user?.uid} />)
                 )}
               </section>
             )}
@@ -123,7 +123,7 @@ export function HomeViajeroScreen() {
                   </span>
                 </div>
                 {tomadas.map((e) => (
-                  <EncomiendaCard key={e._id} e={e} onOpen={() => verDetalle(e)} />
+                  <EncomiendaCard key={e._id} e={e} onOpen={() => verDetalle(e)} propia={e.uid === user?.uid} />
                 ))}
               </section>
             )}
@@ -145,7 +145,7 @@ export function HomeViajeroScreen() {
   );
 }
 
-function EncomiendaCard({ e, onOpen }: { e: Encomienda; onOpen: () => void }) {
+function EncomiendaCard({ e, onOpen, propia }: { e: Encomienda; onOpen: () => void; propia: boolean }) {
   return (
     <article className="flex flex-col gap-2.5 rounded-card bg-card p-space-md shadow-card">
       <div className="flex items-start justify-between gap-3">
@@ -156,6 +156,7 @@ function EncomiendaCard({ e, onOpen }: { e: Encomienda; onOpen: () => void }) {
               {e.ciudadOrigen} → {e.ciudadDestino}
             </span>
           </span>
+          {propia && <span className="w-fit rounded-full bg-chip px-2 py-0.5 text-label-caps uppercase text-navy">Tu encomienda</span>}
           <p className="text-body-md leading-snug text-on-surface">{e.observaciones || 'Sin observaciones'}</p>
         </div>
         <span className="shrink-0 text-headline-sm font-bold text-wine">{formatearValor(e.valor, e.moneda)}</span>
