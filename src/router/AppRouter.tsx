@@ -12,6 +12,7 @@ import { MisViajesScreen } from '../screens/MisViajesScreen';
 import { NuevaEncomiendaScreen } from '../screens/NuevaEncomiendaScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { RegistrarViajeScreen } from '../screens/RegistrarViajeScreen';
+import { ViajerosDisponiblesScreen } from '../screens/ViajerosDisponiblesScreen';
 import { ResetSentScreen } from '../screens/ResetSentScreen';
 import { RoleSelectionScreen } from '../screens/RoleSelectionScreen';
 import { EntryRedirect, Gate } from './guards';
@@ -21,6 +22,7 @@ import { EntryRedirect, Gate } from './guards';
  *   sin sesión       → /login ⇄ /registro, /recuperar → /recuperar/enviado
  *   sesión sin perfil → /completar-perfil
  *   sesión + perfil  → /rol → /home/remitente → /remitente/encomienda/nueva
+ *                          → /remitente/viajeros
  *                          → /home/viajero   → /viajero/viajes, /viajero/viaje/nuevo, /viajero/encomienda/:id
  *                      /perfil/editar → /perfil/contrasena | /perfil/correo
  *   cualquiera       → /recuperar (con sesión se llega desde "¿La olvidaste?")
@@ -49,6 +51,7 @@ export function AppRouter() {
           <Route path="/rol" element={<RoleSelectionScreen />} />
           <Route path="/home/remitente" element={<HomeRemitenteScreen />} />
           <Route path="/remitente/encomienda/nueva" element={<NuevaEncomiendaScreen />} />
+          <Route path="/remitente/viajeros" element={<ViajerosDisponiblesScreen />} />
           <Route path="/home/viajero" element={<HomeViajeroScreen />} />
           <Route path="/viajero/encomienda/:id" element={<EncomiendaViajeroScreen />} />
           <Route path="/viajero/viajes" element={<MisViajesScreen />} />

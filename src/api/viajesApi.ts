@@ -27,7 +27,25 @@ function asList<T>(data: unknown, key: string): T[] {
   return Array.isArray(inner) ? (inner as T[]) : [];
 }
 
+/** Viaje disponible visto por un remitente (no trae id ni estado; sí el nombre del viajero). */
+export interface ViajeDisponible {
+  uid: string;
+  nombreUsuario: string;
+  ciudadOrigen: string;
+  ciudadDestino: string;
+  fechaViaje: string;
+}
+
 export const viajesApi = {
+  /** GET /api/viajes/disponibles — viajes disponibles de otros usuarios en una ruta (pública). */
+  disponiblesEnRuta: async (ciudadOrigen: string, ciudadDestino: string) =>
+    asList<ViajeDisponible>(
+      await apiClient.get<unknown>(
+        `/api/viajes/disponibles?ciudadOrigen=${encodeURIComponent(ciudadOrigen)}&ciudadDestino=${encodeURIComponent(ciudadDestino)}`,
+        { auth: false },
+      ),
+      'viajes',
+    ),
   /** POST /api/viajes — 400 si el usuario ya tiene un viaje disponible. */
   crear: (data: NuevoViaje) => apiClient.post<Viaje>('/api/viajes', data),
   /** GET /api/viajes — todos mis viajes. */

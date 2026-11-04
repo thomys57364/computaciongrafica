@@ -122,6 +122,7 @@ Sesión completa     → /rol → /home/remitente | /home/viajero
 | `MisViajesScreen` | `/viajero/viajes` | Todos los viajes con su estado; permite marcar el activo como completado o cancelarlo (`PATCH /api/viajes/:id/estado`). |
 | `HomeRemitenteScreen` | `/home/remitente` | Encomiendas del remitente en pestañas (Disponibles, Tomadas, Vencidas, Recibidas), con «Marcar recibida» y «Republicar». |
 | `EncomiendaViajeroScreen` | `/viajero/encomienda/:id` | Detalle de una encomienda para el viajero, con «Tomar encomienda» (`PUT /api/encomiendas/tomar/:id`). Usa `GET /api/encomiendas/buscar` para listar las disponibles y las tomadas en la ruta del viaje activo. |
+| `ViajerosDisponiblesScreen` | `/remitente/viajeros` | Viajes activos de otros usuarios en una ruta (`GET /api/viajes/disponibles`), con atajos a las rutas de tus encomiendas. |
 | `NuevaEncomiendaScreen` | `/remitente/encomienda/nueva` | Formulario de encomienda: ruta, observaciones, moneda (USD/COP) y valor. `POST /api/encomiendas`. |
 | `EditProfileScreen` | `/perfil/editar` | Edita los datos (PUT solo con los campos que cambiaron) y tiene los enlaces a seguridad. |
 | `ChangePasswordScreen` | `/perfil/contrasena` | Pide la contraseña actual, la nueva y su confirmación. |

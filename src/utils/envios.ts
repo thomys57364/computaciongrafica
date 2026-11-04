@@ -81,6 +81,24 @@ export function idCorto(id: string): string {
   return `#ENC-${id.slice(-6).toUpperCase()}`;
 }
 
+export interface Ruta {
+  origen: string;
+  destino: string;
+}
+
+/** Rutas distintas (sin importar tildes/mayúsculas) de una lista de encomiendas. */
+export function rutasUnicas(lista: Pick<Encomienda, 'ciudadOrigen' | 'ciudadDestino'>[]): Ruta[] {
+  const vistas = new Set<string>();
+  const rutas: Ruta[] = [];
+  for (const e of lista) {
+    const clave = `${normalizar(e.ciudadOrigen)}>${normalizar(e.ciudadDestino)}`;
+    if (vistas.has(clave)) continue;
+    vistas.add(clave);
+    rutas.push({ origen: e.ciudadOrigen, destino: e.ciudadDestino });
+  }
+  return rutas;
+}
+
 /** Reparte las encomiendas por pestaña del Home del remitente. */
 export function agruparEncomiendas(lista: Encomienda[]): Record<EstadoEncomienda, Encomienda[]> {
   const grupos: Record<EstadoEncomienda, Encomienda[]> = { disponible: [], tomada: [], vencida: [], recibida: [] };

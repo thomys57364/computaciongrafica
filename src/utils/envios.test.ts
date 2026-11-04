@@ -8,6 +8,7 @@ import {
   formatearValor,
   fechaMinimaViaje,
   idCorto,
+  rutasUnicas,
   normalizarVuelo,
   resolverCiudad,
   viajeActivo,
@@ -69,8 +70,17 @@ describe('Utilidades de envíos', () => {
     expect(grupos.recibida).toHaveLength(0);
   });
 
-  it('genera un id corto', () => {
+  it('genera un id corto y rutas únicas', () => {
     expect(idCorto('65f1c0ffee84920a')).toBe('#ENC-84920A');
+    const r = rutasUnicas([
+      { ciudadOrigen: 'Bogotá', ciudadDestino: 'Miami' },
+      { ciudadOrigen: 'bogota', ciudadDestino: 'MIAMI' },
+      { ciudadOrigen: 'Cali', ciudadDestino: 'Madrid' },
+    ]);
+    expect(r).toEqual([
+      { origen: 'Bogotá', destino: 'Miami' },
+      { origen: 'Cali', destino: 'Madrid' },
+    ]);
   });
 
   it('ordena y limpia la lista de ciudades', () => {
