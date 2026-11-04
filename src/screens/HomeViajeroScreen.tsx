@@ -9,6 +9,7 @@ import { HomeHeader } from '../components/HomeHeader';
 import { Icon } from '../components/Icon';
 import { EmptyState, LoadState } from '../components/LoadState';
 import { RouteStrip } from '../components/RouteStrip';
+import { TomadasDelViaje } from '../components/TomadasDelViaje';
 import { useAsync } from '../hooks/useAsync';
 import { useFlash } from '../hooks/useFlash';
 import { formatearFecha, formatearValor, viajeActivo } from '../utils/envios';
@@ -79,6 +80,7 @@ export function HomeViajeroScreen() {
                     </span>
                   </div>
                   <RouteStrip origen={activo.ciudadOrigen} destino={activo.ciudadDestino} />
+                  <TomadasDelViaje tomadas={tomadas} onOpen={verDetalle} />
                   <Button variant="outline" trailingIcon="edit_calendar" onClick={() => navigate('/viajero/viajes')}>
                     Cambiar viaje o registrar nuevo
                   </Button>
@@ -114,19 +116,6 @@ export function HomeViajeroScreen() {
               </section>
             )}
 
-            {activo && tomadas.length > 0 && (
-              <section className="flex flex-col gap-space-sm pt-1">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-title-md font-bold text-on-surface">Encomiendas que tomaste</h2>
-                  <span className="rounded-full bg-success-bg px-2 py-0.5 text-label-caps font-semibold text-success-strong">
-                    {tomadas.length}
-                  </span>
-                </div>
-                {tomadas.map((e) => (
-                  <EncomiendaCard key={e._id} e={e} onOpen={() => verDetalle(e)} propia={e.uid === user?.uid} />
-                ))}
-              </section>
-            )}
           </>
         )}
 

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { encomiendasApi, type Encomienda } from '../api/encomiendasApi';
 import { viajesApi, type EstadoViaje, type Viaje } from '../api/viajesApi';
 import { Alert } from '../components/Alert';
 import { BottomNav } from '../components/BottomNav';
@@ -9,6 +10,7 @@ import { EmptyState, LoadState } from '../components/LoadState';
 import { RouteStrip } from '../components/RouteStrip';
 import { Screen } from '../components/Screen';
 import { StatusBadge, type BadgeTone } from '../components/StatusBadge';
+import { TomadasDelViaje } from '../components/TomadasDelViaje';
 import { TopBar } from '../components/TopBar';
 import { useAsync } from '../hooks/useAsync';
 import { errorMessage } from '../utils/errorMessage';
@@ -24,14 +26,25 @@ const TONO: Record<EstadoViaje, BadgeTone> = {
 /** Lista de todos los viajes del usuario, con acciones sobre el viaje activo (completar / cancelar). */
 export function MisViajesScreen() {
   const navigate = useNavigate();
-  const { data, loading, error, reload } = useAsync(() => viajesApi.listar());
+  const { data, loading, error, reload } = useAsync(async () => {
+    const viajes = await viajesApi.listar();
+    const activo = viajes.find(esViajeActivo);
+    // Las encomiendas no guardan a qué viaje pertenecen: las tomadas por mí en la ruta del viaje activo son las suyas.
+    const tomadas: Encomienda[] = activo
+      ? await encomiendasApi
+          .enRuta(activo.ciudadOrigen, activo.ciudadDestino)
+          .then((r) => r.tomadas)
+          .catch(() => [])
+      : [];
+    return { viajes, tomadas };
+  });
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const viajes = useMemo(
-    () => [...(data ?? [])].sort((a, b) => (b.fechaViaje ?? '').localeCompare(a.fechaViaje ?? '')),
+    () => [...(data?.viajes ?? [])].sort((a, b) => (b.fechaViaje ?? '').localeCompare(a.fechaViaje ?? '')),
     [data],
   );
   const hayActivo = viajes.some(esViajeActivo);
@@ -86,6 +99,13 @@ export function MisViajesScreen() {
                     <Icon name="calendar_today" className="text-[16px]" />
                     {formatearFecha(v.fechaViaje)}
                   </span>
+
+                  {esViajeActivo(v) && (
+                    <TomadasDelViaje
+                      tomadas={data?.tomadas ?? []}
+                      onOpen={(e) => navigate(`/viajero/encomienda/${e._id}`, { state: { encomienda: e } })}
+                    />
+                  )}
 
                   {esViajeActivo(v) &&
                     (confirmId === v._id ? (
