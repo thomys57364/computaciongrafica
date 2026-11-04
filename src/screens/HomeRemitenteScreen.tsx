@@ -157,6 +157,16 @@ export function HomeRemitenteScreen() {
                   )}
                   <div className="flex items-center justify-between gap-3 bg-field/50 px-4 py-3">
                     <span className="text-headline-sm font-bold text-wine">{formatearValor(e.valor, e.moneda)}</span>
+                    {e.estado === 'disponible' && (
+                      <Button
+                        variant="outline"
+                        trailingIcon="edit"
+                        onClick={() => navigate('/remitente/encomienda/nueva', { state: { editar: e } })}
+                        className="!min-h-10 !w-auto !px-3 text-label-md"
+                      >
+                        Editar
+                      </Button>
+                    )}
                     {e.estado === 'tomada' && (
                       <Button
                         variant="secondary"

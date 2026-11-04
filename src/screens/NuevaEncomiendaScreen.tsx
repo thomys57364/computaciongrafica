@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { encomiendasApi } from '../api/encomiendasApi';
+import { encomiendasApi, type Encomienda } from '../api/encomiendasApi';
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { CityField } from '../components/CityField';
@@ -13,7 +13,7 @@ import { TopBar } from '../components/TopBar';
 import { useCiudades } from '../hooks/useCiudades';
 import { useForm } from '../hooks/useForm';
 import { errorMessage } from '../utils/errorMessage';
-import { resolverCiudad } from '../utils/envios';
+import { hayCambios, resolverCiudad } from '../utils/envios';
 import { MAX_OBSERVACIONES, validateParcel, type ParcelFormValues } from '../utils/validation';
 
 /** Datos con los que «Republicar» abre este formulario. */
@@ -27,7 +27,18 @@ const MONEDAS = [
 /** Diseño Stitch «Nueva Encomienda»: ruta, detalles del paquete y compensación al viajero. */
 export function NuevaEncomiendaScreen() {
   const navigate = useNavigate();
-  const prefill = (useLocation().state as { prefill?: PrefillEncomienda } | null)?.prefill;
+  const state = useLocation().state as { prefill?: PrefillEncomienda; editar?: Encomienda } | null;
+  // Editar: el backend no permite modificar una encomienda, así que se publica la corregida y se retira la anterior.
+  const editar = state?.editar ?? null;
+  const prefill: PrefillEncomienda | undefined = editar
+    ? {
+        ciudadOrigen: editar.ciudadOrigen,
+        ciudadDestino: editar.ciudadDestino,
+        observaciones: editar.observaciones ?? '',
+        moneda: editar.moneda,
+        valor: String(editar.valor),
+      }
+    : state?.prefill;
   const { ciudades, loading: loadingCiudades, failed: ciudadesFailed, retry } = useCiudades();
 
   const { values, setValues, errors, bind, validateNow } = useForm<ParcelFormValues>(
@@ -47,16 +58,32 @@ export function NuevaEncomiendaScreen() {
     e.preventDefault();
     setError(null);
     if (!validateNow()) return;
+    const datos = {
+      ciudadOrigen: resolverCiudad(values.ciudadOrigen, ciudades) ?? values.ciudadOrigen.trim(),
+      ciudadDestino: resolverCiudad(values.ciudadDestino, ciudades) ?? values.ciudadDestino.trim(),
+      observaciones: values.observaciones.trim(),
+      moneda: values.moneda,
+      valor: Number(values.valor.replace(',', '.')),
+    };
+    if (editar && !hayCambios(editar, datos)) {
+      setError('No hiciste ningún cambio.');
+      return;
+    }
     setSaving(true);
     try {
-      await encomiendasApi.crear({
-        ciudadOrigen: resolverCiudad(values.ciudadOrigen, ciudades) ?? values.ciudadOrigen.trim(),
-        ciudadDestino: resolverCiudad(values.ciudadDestino, ciudades) ?? values.ciudadDestino.trim(),
-        observaciones: values.observaciones.trim(),
-        moneda: values.moneda,
-        valor: Number(values.valor.replace(',', '.')),
-      });
-      navigate('/home/remitente', { replace: true, state: { flash: 'Encomienda publicada correctamente.' } });
+      await encomiendasApi.crear(datos);
+      if (!editar) {
+        navigate('/home/remitente', { replace: true, state: { flash: 'Encomienda publicada correctamente.' } });
+        return;
+      }
+      // La nueva ya está publicada: ahora se retira la anterior (si falla, se avisa en lugar de ocultarlo).
+      let flash = 'Encomienda actualizada correctamente.';
+      try {
+        await encomiendasApi.cambiarEstado(editar._id, 'vencida');
+      } catch {
+        flash = 'Publicamos los cambios, pero no pudimos retirar la versión anterior: verás las dos en «Disponibles».';
+      }
+      navigate('/home/remitente', { replace: true, state: { flash } });
     } catch (err) {
       setError(errorMessage(err));
       setSaving(false);
@@ -67,10 +94,12 @@ export function NuevaEncomiendaScreen() {
 
   return (
     <>
-      <TopBar title="Nueva encomienda" backTo="/home/remitente" />
+      <TopBar title={editar ? 'Editar encomienda' : 'Nueva encomienda'} backTo="/home/remitente" />
       <Screen withTopBar className="pb-8">
         <p className="pb-3 pt-3 text-body-md text-on-surface-variant">
-          Publica tu solicitud para conectar con viajeros verificados.
+          {editar
+            ? 'Corrige los datos de tu encomienda. Publicaremos la versión nueva y retiraremos la anterior.'
+            : 'Publica tu solicitud para conectar con viajeros verificados.'}
         </p>
 
         <form className="flex flex-col gap-space-md" onSubmit={onSubmit} noValidate>
@@ -145,8 +174,8 @@ export function NuevaEncomiendaScreen() {
           </SectionCard>
 
           <div className="pt-space-sm">
-            <Button type="submit" trailingIcon="arrow_forward" loading={saving} loadingText="Publicando…">
-              Publicar encomienda
+            <Button type="submit" trailingIcon="arrow_forward" loading={saving} loadingText={editar ? 'Guardando…' : 'Publicando…'}>
+              {editar ? 'Guardar cambios' : 'Publicar encomienda'}
             </Button>
           </div>
         </form>

@@ -8,6 +8,7 @@ import {
   formatearValor,
   fechaMinimaViaje,
   consultarRuta,
+  hayCambios,
   idCorto,
   rutasUnicas,
   variantes,
@@ -120,6 +121,14 @@ describe('Utilidades de envíos', () => {
       (x) => x.id,
     );
     expect(r).toEqual([{ id: 'z' }]);
+  });
+
+  it('detecta si una encomienda cambió', () => {
+    const original = { ciudadOrigen: 'Bogota', ciudadDestino: 'Miami', observaciones: 'Caja', moneda: 'USD', valor: 20 };
+    expect(hayCambios(original, { ...original, ciudadOrigen: 'Bogotá', observaciones: ' Caja ' })).toBe(false);
+    expect(hayCambios(original, { ...original, valor: 25 })).toBe(true);
+    expect(hayCambios(original, { ...original, moneda: 'COP' })).toBe(true);
+    expect(hayCambios(original, { ...original, ciudadDestino: 'Madrid' })).toBe(true);
   });
 
   it('ordena y limpia la lista de ciudades', () => {

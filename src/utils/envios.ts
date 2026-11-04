@@ -139,3 +139,16 @@ export function agruparEncomiendas(lista: Encomienda[]): Record<EstadoEncomienda
   return grupos;
 }
 
+/** ¿Los datos del formulario difieren de la encomienda original? (ignora tildes, mayúsculas y espacios) */
+export function hayCambios(
+  original: Pick<Encomienda, 'ciudadOrigen' | 'ciudadDestino' | 'observaciones' | 'moneda' | 'valor'>,
+  nuevos: { ciudadOrigen: string; ciudadDestino: string; observaciones?: string; moneda: string; valor: number },
+): boolean {
+  return (
+    normalizar(original.ciudadOrigen) !== normalizar(nuevos.ciudadOrigen) ||
+    normalizar(original.ciudadDestino) !== normalizar(nuevos.ciudadDestino) ||
+    (original.observaciones ?? '').trim() !== (nuevos.observaciones ?? '').trim() ||
+    original.moneda !== nuevos.moneda ||
+    Number(original.valor) !== nuevos.valor
+  );
+}
