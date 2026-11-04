@@ -15,7 +15,7 @@ export function useForm<T extends object>(initial: T, validate: (values: T) => F
     (field: keyof T) => ({
       name: String(field),
       value: values[field] as string,
-      onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
         setValues((v) => ({ ...v, [field]: e.target.value })),
     }),
     [values],

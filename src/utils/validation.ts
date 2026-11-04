@@ -111,6 +111,88 @@ export function validateChangeEmail(v: ChangeEmailValues, currentEmail: string |
   });
 }
 
+/* ---------- Viajes y encomiendas ---------- */
+
+/** Aerolínea (2 caracteres) + número de 1 a 4 dígitos + sufijo opcional: "AV 010", "AA123", "LA2400". */
+const FLIGHT_RE = /^[A-Z0-9]{2}\s?\d{1,4}[A-Z]?$/;
+
+export function validateFlightNumber(value: string): string | null {
+  const v = value.trim().toUpperCase();
+  if (!v) return 'Ingresa el número de vuelo.';
+  return FLIGHT_RE.test(v) ? null : 'Usa el formato de tu vuelo, por ejemplo AV 010.';
+}
+
+/**
+ * Ciudad escrita en un campo con autocompletado. Si la lista del backend no cargó (`ciudades` vacía)
+ * se acepta cualquier texto para no bloquear al usuario.
+ */
+export function validateCity(value: string, ciudades: string[], label: string): string | null {
+  if (!value.trim()) return `Selecciona la ciudad de ${label}.`;
+  if (ciudades.length === 0) return null;
+  const ok = ciudades.some((c) => c.localeCompare(value.trim(), 'es', { sensitivity: 'base' }) === 0);
+  return ok ? null : 'Elige una ciudad de la lista.';
+}
+
+export function validateTripDate(value: string, today: string): string | null {
+  if (!value) return 'Selecciona la fecha del viaje.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) return 'La fecha no es válida.';
+  return value < today ? 'La fecha no puede ser anterior a hoy.' : null;
+}
+
+export interface TripFormValues {
+  numeroVuelo: string;
+  ciudadOrigen: string;
+  ciudadDestino: string;
+  fechaViaje: string;
+}
+
+export function validateTrip(v: TripFormValues, ciudades: string[], today: string): FormErrors<TripFormValues> {
+  const sameCity =
+    v.ciudadOrigen.trim() &&
+    v.ciudadDestino.trim() &&
+    v.ciudadOrigen.trim().localeCompare(v.ciudadDestino.trim(), 'es', { sensitivity: 'base' }) === 0;
+  return compact({
+    numeroVuelo: validateFlightNumber(v.numeroVuelo),
+    ciudadOrigen: validateCity(v.ciudadOrigen, ciudades, 'origen'),
+    ciudadDestino: validateCity(v.ciudadDestino, ciudades, 'destino') ?? (sameCity ? 'El destino debe ser distinto del origen.' : null),
+    fechaViaje: validateTripDate(v.fechaViaje, today),
+  });
+}
+
+export const MAX_OBSERVACIONES = 300;
+export const MONEDAS = ['USD', 'COP'] as const;
+
+export interface ParcelFormValues {
+  ciudadOrigen: string;
+  ciudadDestino: string;
+  observaciones: string;
+  moneda: string;
+  valor: string;
+}
+
+export function validateParcel(v: ParcelFormValues, ciudades: string[]): FormErrors<ParcelFormValues> {
+  const sameCity =
+    v.ciudadOrigen.trim() &&
+    v.ciudadDestino.trim() &&
+    v.ciudadOrigen.trim().localeCompare(v.ciudadDestino.trim(), 'es', { sensitivity: 'base' }) === 0;
+  const valor = Number(v.valor.replace(',', '.'));
+  let errValor: string | null = null;
+  if (!v.valor.trim()) errValor = 'Ingresa el valor que ofreces.';
+  else if (!Number.isFinite(valor) || valor <= 0) errValor = 'El valor debe ser mayor que cero.';
+  return compact({
+    ciudadOrigen: validateCity(v.ciudadOrigen, ciudades, 'origen'),
+    ciudadDestino: validateCity(v.ciudadDestino, ciudades, 'destino') ?? (sameCity ? 'El destino debe ser distinto del origen.' : null),
+    observaciones:
+      v.observaciones.trim().length === 0
+        ? 'Describe qué envías.'
+        : v.observaciones.length > MAX_OBSERVACIONES
+          ? `Máximo ${MAX_OBSERVACIONES} caracteres.`
+          : null,
+    moneda: (MONEDAS as readonly string[]).includes(v.moneda) ? null : 'Selecciona la moneda.',
+    valor: errValor,
+  });
+}
+
 export function hasErrors(errors: object): boolean {
   return Object.keys(errors).length > 0;
 }
