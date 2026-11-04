@@ -21,7 +21,8 @@ import { validateProfile, type ProfileFormValues } from '../utils/validation';
 
 /** Datos personales: precarga con GET /api/users/:uid y guarda con PUT solo lo que cambió. */
 export function EditProfileScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
   const [loaded, setLoaded] = useState<ProfileFormValues | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -65,6 +66,22 @@ export function EditProfileScreen() {
             Cargando tus datos…
           </div>
         )}
+
+        {/* Fuera de la carga del perfil: cerrar sesión debe estar siempre disponible. */}
+        <div className="mt-auto pt-space-lg">
+          <Button
+            variant="outline"
+            trailingIcon="logout"
+            loading={loggingOut}
+            loadingText="Cerrando sesión…"
+            onClick={() => {
+              setLoggingOut(true);
+              void logout();
+            }}
+          >
+            Cerrar sesión
+          </Button>
+        </div>
       </Screen>
     </>
   );
