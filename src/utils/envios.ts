@@ -1,5 +1,6 @@
 import type { Encomienda, EstadoEncomienda } from '../api/encomiendasApi';
 import type { EstadoViaje, Viaje } from '../api/viajesApi';
+import { backendMessage, errorMessage } from './errorMessage';
 
 /** Quita tildes y pasa a minúsculas para comparar ciudades ("Bogotá" == "bogota"). */
 export function normalizar(texto: string): string {
@@ -132,10 +133,16 @@ export function rutasUnicas(lista: Pick<Encomienda, 'ciudadOrigen' | 'ciudadDest
   return rutas;
 }
 
-/** Reparte las encomiendas por pestaña del Home del remitente. */
+/** Estado de una encomienda que el remitente eliminó (el backend no las borra). */
+export const ESTADO_ELIMINADA = 'cancelada';
+
+/** Reparte las encomiendas por pestaña del Home del remitente (las eliminadas no aparecen). */
 export function agruparEncomiendas(lista: Encomienda[]): Record<EstadoEncomienda, Encomienda[]> {
   const grupos: Record<EstadoEncomienda, Encomienda[]> = { disponible: [], tomada: [], vencida: [], recibida: [] };
-  for (const e of lista) (grupos[e.estado] ?? grupos.disponible).push(e);
+  for (const e of lista) {
+    if ((e.estado as string) === ESTADO_ELIMINADA) continue;
+    (grupos[e.estado] ?? grupos.disponible).push(e);
+  }
   return grupos;
 }
 
@@ -151,4 +158,30 @@ export function hayCambios(
     original.moneda !== nuevos.moneda ||
     Number(original.valor) !== nuevos.valor
   );
+}
+
+export const MENSAJE_VIAJE_ACTIVO =
+  'Ya tienes un viaje activo. Cancélalo o márcalo como completado en «Mis viajes» para registrar otro.';
+
+/**
+ * Mensaje para un error al crear un viaje. El backend responde 400 tanto por «ya tienes un viaje disponible»
+ * como por datos inválidos: se distinguen por el texto que manda.
+ */
+export function mensajeErrorViaje(err: unknown): string {
+  const status = (err as { status?: unknown } | null)?.status;
+  if (!(err instanceof Error) || err.name !== 'ApiError' || status !== 400) return errorMessage(err);
+  const detalle = backendMessage(err);
+  if (!detalle || /ya tienes|viaje (disponible|activo)/i.test(detalle)) return MENSAJE_VIAJE_ACTIVO;
+  return detalle;
+}
+
+/**
+ * Interpreta GET /api/viajes/disponible. La forma de la respuesta sin viaje no está documentada, así que se
+ * acepta: el viaje, { viaje }, un arreglo, o vacío/null (sin viaje activo).
+ */
+export function viajeDeRespuesta(data: unknown): Viaje | null {
+  const candidato = Array.isArray(data) ? data[0] : (data as Record<string, unknown> | null)?.viaje ?? data;
+  return candidato && typeof candidato === 'object' && typeof (candidato as Viaje)._id === 'string'
+    ? (candidato as Viaje)
+    : null;
 }

@@ -1,8 +1,9 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import { ChangeEmailScreen } from '../screens/ChangeEmailScreen';
 import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
 import { CompleteProfileScreen } from '../screens/CompleteProfileScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
+import { EncomiendaRemitenteScreen } from '../screens/EncomiendaRemitenteScreen';
 import { EncomiendaViajeroScreen } from '../screens/EncomiendaViajeroScreen';
 import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
 import { HomeRemitenteScreen } from '../screens/HomeRemitenteScreen';
@@ -14,18 +15,18 @@ import { RegisterScreen } from '../screens/RegisterScreen';
 import { RegistrarViajeScreen } from '../screens/RegistrarViajeScreen';
 import { ViajerosDisponiblesScreen } from '../screens/ViajerosDisponiblesScreen';
 import { ResetSentScreen } from '../screens/ResetSentScreen';
-import { RoleSelectionScreen } from '../screens/RoleSelectionScreen';
 import { EntryRedirect, Gate } from './guards';
+import { RoleGate } from './RoleGate';
 
 /**
  * Mapa de navegación:
- *   sin sesión       → /login ⇄ /registro, /recuperar → /recuperar/enviado
+ *   sin sesión        → /login ⇄ /registro, /recuperar → /recuperar/enviado
  *   sesión sin perfil → /completar-perfil
- *   sesión + perfil  → /rol → /home/remitente → /remitente/encomienda/nueva
- *                          → /remitente/viajeros
- *                          → /home/viajero   → /viajero/viajes, /viajero/viaje/nuevo, /viajero/encomienda/:id
- *                      /perfil/editar → /perfil/contrasena | /perfil/correo
- *   cualquiera       → /recuperar (con sesión se llega desde "¿La olvidaste?")
+ *   sesión + perfil   → Home del rol guardado (el primer ingreso entra como remitente)
+ *     /remitente      → encomiendas/nueva, encomiendas/:id, encomiendas/:id/editar, viajeros
+ *     /viajero        → viajes, viajes/nuevo, encomiendas/:id
+ *     /perfil         → /perfil/contrasena | /perfil/correo  (común a los dos roles)
+ *   El modo (remitente/viajero) se cambia desde el Home o el perfil; RoleGate lo ajusta según la URL.
  */
 export function AppRouter() {
   return (
@@ -48,22 +49,47 @@ export function AppRouter() {
         </Route>
 
         <Route element={<Gate allow={['ready']} />}>
-          <Route path="/rol" element={<RoleSelectionScreen />} />
-          <Route path="/home/remitente" element={<HomeRemitenteScreen />} />
-          <Route path="/remitente/encomienda/nueva" element={<NuevaEncomiendaScreen />} />
-          <Route path="/remitente/viajeros" element={<ViajerosDisponiblesScreen />} />
-          <Route path="/home/viajero" element={<HomeViajeroScreen />} />
-          <Route path="/viajero/encomienda/:id" element={<EncomiendaViajeroScreen />} />
-          <Route path="/viajero/viajes" element={<MisViajesScreen />} />
-          <Route path="/viajero/viaje/nuevo" element={<RegistrarViajeScreen />} />
-          <Route path="/perfil/editar" element={<EditProfileScreen />} />
-          {/* Contraseña y correo redirigen a /perfil/editar si la cuenta no tiene proveedor password. */}
+          <Route path="/remitente" element={<RoleGate rol="remitente" />}>
+            <Route index element={<HomeRemitenteScreen />} />
+            <Route path="encomiendas/nueva" element={<NuevaEncomiendaScreen />} />
+            <Route path="encomiendas/:id" element={<EncomiendaRemitenteScreen />} />
+            <Route path="encomiendas/:id/editar" element={<NuevaEncomiendaScreen />} />
+            <Route path="viajeros" element={<ViajerosDisponiblesScreen />} />
+          </Route>
+
+          <Route path="/viajero" element={<RoleGate rol="viajero" />}>
+            <Route index element={<HomeViajeroScreen />} />
+            <Route path="viajes" element={<MisViajesScreen />} />
+            <Route path="viajes/nuevo" element={<RegistrarViajeScreen />} />
+            <Route path="encomiendas/:id" element={<EncomiendaViajeroScreen />} />
+          </Route>
+
+          <Route path="/perfil" element={<EditProfileScreen />} />
+          {/* Contraseña y correo redirigen a /perfil si la cuenta no tiene proveedor password. */}
           <Route path="/perfil/contrasena" element={<ChangePasswordScreen />} />
           <Route path="/perfil/correo" element={<ChangeEmailScreen />} />
+
+          {/* Rutas antiguas: siguen funcionando por si hay enlaces guardados. */}
+          <Route path="/home/:rol" element={<LegacyHome />} />
+          <Route path="/rol" element={<Navigate to="/" replace />} />
+          <Route path="/perfil/editar" element={<Navigate to="/perfil" replace />} />
+          <Route path="/remitente/encomienda/nueva" element={<Navigate to="/remitente/encomiendas/nueva" replace />} />
+          <Route path="/viajero/viaje/nuevo" element={<Navigate to="/viajero/viajes/nuevo" replace />} />
+          <Route path="/viajero/encomienda/:id" element={<LegacyEncomiendaViajero />} />
         </Route>
 
         <Route path="*" element={<EntryRedirect />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+function LegacyHome() {
+  const { rol } = useParams();
+  return <Navigate to={rol === 'viajero' || rol === 'remitente' ? `/${rol}` : '/'} replace />;
+}
+
+function LegacyEncomiendaViajero() {
+  const { id = '' } = useParams();
+  return <Navigate to={`/viajero/encomiendas/${encodeURIComponent(id)}`} replace />;
 }

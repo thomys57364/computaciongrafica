@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
-/** Mensaje de éxito que una pantalla anterior dejó en `navigate(..., { state: { flash } })`. */
+export type FlashTone = 'success' | 'info';
+
+/**
+ * Mensaje que una pantalla anterior dejó en `navigate(..., { state: { flash, flashTone } })`.
+ * Por defecto es de éxito; `flashTone: 'info'` sirve para avisos (p. ej. «no encontramos esa encomienda»).
+ */
 export function useFlash() {
-  const initial = (useLocation().state as { flash?: unknown } | null)?.flash;
-  const [flash, setFlash] = useState<string | null>(typeof initial === 'string' ? initial : null);
-  return { flash, dismiss: () => setFlash(null) };
+  const state = useLocation().state as { flash?: unknown; flashTone?: unknown } | null;
+  const [flash, setFlash] = useState<string | null>(typeof state?.flash === 'string' ? state.flash : null);
+  const tone: FlashTone = state?.flashTone === 'info' ? 'info' : 'success';
+  return { flash, tone, dismiss: () => setFlash(null) };
 }

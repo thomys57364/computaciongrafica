@@ -68,7 +68,8 @@ Lo que hace `apiClient.ts` en cada petición:
 - Agrega `Authorization: Bearer <token>` usando `getIdToken()`.
 - Corta la petición a los 60 s.
 - Convierte los errores en `ApiError`, con mensajes en español para 401, 403, 400, sin red y timeout.
-- Reintenta una vez ante 502/503/504 (Render despertando).
+- Solo en los GET: reintenta una vez ante 502/503/504 o un corte de red (Render despertando). Los POST/PUT/PATCH no se repiten para no duplicar datos.
+- En un 400/409 muestra el texto que manda el backend (`{ error }`), si lo hay.
 - Ante un 401, reintenta una vez con un token renovado.
 
 ### `auth/`: sesión del usuario
@@ -98,33 +99,37 @@ También expone a las pantallas `user`, `profile`, `completeProfile`, `updatePro
 - **`AppRouter.tsx`** es la lista de rutas.
 - **`guards.tsx`** contiene las dos guardias:
   - `Gate` deja entrar a una ruta solo si el `status` está permitido. Si no, muestra una pantalla de carga o de error, o redirige a donde corresponde.
-  - `EntryRedirect` atiende `/` y las rutas desconocidas: te manda a `/login`, `/completar-perfil`, `/rol` o tu home, según la sesión. Si ya habías elegido un rol, entra directo a tu home.
+  - `EntryRedirect` atiende `/` y las rutas desconocidas: te manda a `/login`, `/completar-perfil` o tu home, según la sesión. Entra al Home del último modo usado (remitente la primera vez).
+  - `RoleGate` protege `/remitente/*` y `/viajero/*`. No bloquea: abrir una ruta de un rol activa ese modo; así funciona el selector del encabezado. No hay pantalla de selección de rol. El rol vive en `localStorage` por usuario (el backend no lo guarda) y se conserva al cerrar sesión.
 
 ```
 Sin sesión          → /login ⇄ /registro       /recuperar → /recuperar/enviado
 Cuenta sin perfil   → /completar-perfil
-Sesión completa     → /rol → /home/remitente | /home/viajero
-                      /perfil/editar → /perfil/contrasena | /perfil/correo
+Sesión completa     → Home del último modo (remitente la primera vez)
+  /remitente        → encomiendas/nueva · encomiendas/:id · encomiendas/:id/editar · viajeros
+  /viajero          → viajes · viajes/nuevo · encomiendas/:id
+  /perfil           → /perfil/contrasena | /perfil/correo   (común a los dos roles)
+El modo se cambia con el selector «Remitente | Viajero» del encabezado de los Home.
 ```
 
 ### `screens/`: las pantallas (una por archivo)
 
 | Pantalla | Ruta | Qué hace |
 |---|---|---|
-| `LoginScreen` | `/login` | Inicio de sesión con correo y contraseña o con Google. |
+| `LoginScreen` | `/login` | Inicio de sesión con correo y contraseña. El botón de Google está oculto mientras falla (`VITE_ENABLE_GOOGLE_SIGNIN=true` lo muestra). |
 | `RegisterScreen` | `/registro` | Crea la cuenta en Firebase y luego el perfil en el backend. Si falla el backend, permite reintentar sin crear otra cuenta. |
 | `CompleteProfileScreen` | `/completar-perfil` | Formulario de nombre, apellido, teléfono y nacionalidad para quien no tiene perfil. |
 | `ForgotPasswordScreen` | `/recuperar` | Pide el correo y envía el enlace. No revela si el correo existe. |
 | `ResetSentScreen` | `/recuperar/enviado` | "Revisa tu correo", con un botón para reenviar que espera 30 s entre intentos. |
-| `RoleSelectionScreen` | `/rol` | Elegir entre Remitente y Viajero. |
-| `HomeViajeroScreen` | `/home/viajero` | Viaje activo del viajero y encomiendas disponibles en su ruta (diseño Stitch «Home del Viajero»). |
-| `RegistrarViajeScreen` | `/viajero/viaje/nuevo` | Formulario de viaje: número de vuelo, origen, destino y fecha. `POST /api/viajes`; el backend solo admite un viaje activo. |
+| `HomeViajeroScreen` | `/viajero` | Viaje activo (`GET /api/viajes/disponible`), encomiendas disponibles en su ruta y sus últimos viajes (diseño Stitch «Home del Viajero»). |
+| `RegistrarViajeScreen` | `/viajero/viajes/nuevo` | Formulario de viaje: número de vuelo, origen, destino y fecha. `POST /api/viajes`; el backend solo admite un viaje activo (su 400 se muestra con un mensaje claro). |
 | `MisViajesScreen` | `/viajero/viajes` | Todos los viajes con su estado; permite marcar el activo como completado o cancelarlo (`PATCH /api/viajes/:id/estado`). |
-| `HomeRemitenteScreen` | `/home/remitente` | Encomiendas del remitente en pestañas (Disponibles, Tomadas, Vencidas, Recibidas), con «Marcar recibida» y «Republicar». |
-| `EncomiendaViajeroScreen` | `/viajero/encomienda/:id` | Detalle de una encomienda para el viajero, con «Tomar encomienda» (`PUT /api/encomiendas/tomar/:id`). Usa `GET /api/encomiendas/buscar` para listar las disponibles y las tomadas en la ruta del viaje activo. |
+| `HomeRemitenteScreen` | `/remitente` | Encomiendas del remitente en pestañas (Disponibles, Tomadas, Vencidas, Recibidas), con «Editar», «Eliminar», «Marcar recibida» y «Republicar». «Eliminar» pasa la encomienda a `cancelada` (`PUT /api/encomiendas/:id/estado`; el backend no tiene DELETE) y deja de mostrarse. |
+| `EncomiendaViajeroScreen` | `/viajero/encomiendas/:id` | Detalle de una encomienda para el viajero, con «Tomar encomienda» (`PUT /api/encomiendas/tomar/:id`). Al recargar la busca de nuevo en la ruta del viaje activo (`/buscar` + `/disponibles`); si ya no está, vuelve al Home con un aviso. |
+| `EncomiendaRemitenteScreen` | `/remitente/encomiendas/:id` | Detalle para el remitente (diseños «Tomada» y «Entregada»): viajero asignado, valor y acciones (editar, marcar recibida, republicar). Al recargar la busca en `GET /api/encomiendas`. |
 | `ViajerosDisponiblesScreen` | `/remitente/viajeros` | Viajes activos de otros usuarios en una ruta (`GET /api/viajes/disponibles`), con atajos a las rutas de tus encomiendas. |
-| `NuevaEncomiendaScreen` | `/remitente/encomienda/nueva` | Formulario de encomienda: ruta, observaciones, moneda (USD/COP) y valor. `POST /api/encomiendas`. |
-| `EditProfileScreen` | `/perfil/editar` | Edita los datos (PUT solo con los campos que cambiaron) y tiene los enlaces a seguridad. |
+| `NuevaEncomiendaScreen` | `/remitente/encomiendas/nueva` y `/remitente/encomiendas/:id/editar` | Formulario de encomienda: ruta, observaciones, moneda (USD/COP) y valor. `POST /api/encomiendas`. |
+| `EditProfileScreen` | `/perfil` | «Mi perfil»: datos (PUT solo con los campos que cambiaron), enlaces a seguridad y cerrar sesión. |
 | `ChangePasswordScreen` | `/perfil/contrasena` | Pide la contraseña actual, la nueva y su confirmación. |
 | `ChangeEmailScreen` | `/perfil/correo` | Pide la contraseña actual y el correo nuevo, y envía un enlace de verificación. |
 | `ProfileErrorScreen` | (sin ruta) | Aparece cuando no se pudo cargar el perfil y ofrece "Reintentar". |
@@ -179,5 +184,4 @@ Sesión completa     → /rol → /home/remitente | /home/viajero
 3. `authService` crea la cuenta en **Firebase**.
 4. `usersApi.register` envía POST `/api/users/register`. `apiClient` agrega el token y lo envía a `/api`, y el proxy lo reenvía a Render.
 5. Si Render tarda más de 4 s, `serverWake` activa el `ServerWakeBanner`.
-6. Con un OK, el estado pasa a `ready` y la guardia te lleva a `/rol`.
-7. Eliges un rol: se guarda con `roleStorage` y entras a `/home/remitente` o `/home/viajero`.
+6. Con un OK, el estado pasa a `ready` y la guardia te lleva a tu Home (remitente la primera vez).

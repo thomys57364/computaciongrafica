@@ -4,7 +4,14 @@ export type Rol = 'remitente' | 'viajero';
 
 const key = (uid: string) => `lapticon:rol:${uid}`;
 
+/** Sin rol guardado (primer ingreso) se entra como remitente; el modo se cambia desde el encabezado del Home. */
+export const ROL_POR_DEFECTO: Rol = 'remitente';
+
 export const roleStorage = {
+  /** Rol guardado o, si no hay, el rol por defecto. */
+  actual(uid: string): Rol {
+    return this.get(uid) ?? ROL_POR_DEFECTO;
+  },
   get(uid: string): Rol | null {
     try {
       const value = localStorage.getItem(key(uid));

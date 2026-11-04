@@ -4,7 +4,6 @@ import { setUnauthorizedHandler } from '../api/apiClient';
 import { lookupProfile, usersApi, type ProfileData, type UserProfile } from '../api/usersApi';
 import { auth } from '../config/firebase';
 import { errorCode, errorMessage } from '../utils/errorMessage';
-import { roleStorage } from '../utils/roleStorage';
 import { authService } from './authService';
 import { isSilentAuthError } from './firebaseErrors';
 
@@ -110,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [checkProfile]);
 
   const logout = useCallback(async () => {
-    if (auth.currentUser) roleStorage.clear(auth.currentUser.uid);
+    // El rol se conserva (va por uid): al volver a entrar no se pide de nuevo la Selección de rol.
     registeringRef.current = false;
     await authService.logout();
   }, []);
@@ -127,8 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const saved = await usersApi.register(data);
     registeringRef.current = false;
     lookupIdRef.current++;
-    // Si el backend no devuelve el perfil en la respuesta, se usa lo que se envió.
-    setProfile(saved && typeof saved === 'object' && Object.keys(saved).length > 0 ? saved : { ...data });
+    // Si el backend no devuelve el perfil (p. ej. solo { mensaje }), lo enviado completa los campos.
+    setProfile({ ...data, ...(saved && typeof saved === 'object' ? saved : {}) });
     setStatus('ready');
   }, []);
 

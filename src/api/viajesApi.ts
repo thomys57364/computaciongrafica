@@ -1,5 +1,5 @@
-import { consultarRuta } from '../utils/envios';
-import { apiClient } from './apiClient';
+import { consultarRuta, viajeDeRespuesta } from '../utils/envios';
+import { ApiError, apiClient } from './apiClient';
 
 export type EstadoViaje = 'disponible' | 'completado' | 'cancelado' | 'contactado';
 
@@ -38,6 +38,15 @@ export interface ViajeDisponible {
 }
 
 export const viajesApi = {
+  /** GET /api/viajes/disponible — mi viaje disponible (null si no tengo; un 404 también significa «ninguno»). */
+  activo: async (): Promise<Viaje | null> => {
+    try {
+      return viajeDeRespuesta(await apiClient.get<unknown>('/api/viajes/disponible'));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) return null;
+      throw err;
+    }
+  },
   /** GET /api/viajes/disponibles — viajes disponibles de otros usuarios en una ruta (pública). */
   disponiblesEnRuta: (ciudadOrigen: string, ciudadDestino: string) =>
     consultarRuta(

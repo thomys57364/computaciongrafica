@@ -5,18 +5,18 @@ import { useAuth } from '../auth/AuthContext';
 import { hasPasswordProvider } from '../auth/authService';
 import { Alert } from '../components/Alert';
 import { Avatar } from '../components/Avatar';
+import { BottomNav } from '../components/BottomNav';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
 import { ProfileFields } from '../components/ProfileFields';
 import { ReadOnlyField } from '../components/ReadOnlyField';
 import { Screen } from '../components/Screen';
-import { SegmentedControl } from '../components/SegmentedControl';
 import { Spinner } from '../components/Spinner';
 import { TopBar } from '../components/TopBar';
 import { useForm } from '../hooks/useForm';
 import { errorMessage } from '../utils/errorMessage';
 import { changedFields, profileToForm } from '../utils/profileDiff';
-import { roleStorage, type Rol } from '../utils/roleStorage';
+import { roleStorage } from '../utils/roleStorage';
 import { validateProfile, type ProfileFormValues } from '../utils/validation';
 
 /** Datos personales: precarga con GET /api/users/:uid y guarda con PUT solo lo que cambió. */
@@ -25,6 +25,8 @@ export function EditProfileScreen() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [loaded, setLoaded] = useState<ProfileFormValues | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Pestaña común a los dos roles: la barra inferior es la del modo actual (si ya eligió uno).
+  const rol = user ? roleStorage.actual(user.uid) : null;
 
   const load = useCallback(() => {
     if (!user) return;
@@ -40,12 +42,8 @@ export function EditProfileScreen() {
 
   return (
     <>
-      <TopBar title="Datos personales" backTo="/" />
-      <Screen withTopBar className="pb-8">
-        {/* Fuera de la carga del perfil: el cambio de rol debe estar siempre disponible. */}
-        <div className="pt-space-md">
-          <RoleSection />
-        </div>
+      <TopBar title="Mi perfil" backTo={rol ? `/${rol}` : '/'} />
+      <Screen withTopBar className={rol ? 'pb-24' : 'pb-8'}>
         {loaded ? (
           <EditProfileForm initial={loaded} />
         ) : loadError ? (
@@ -83,40 +81,8 @@ export function EditProfileScreen() {
           </Button>
         </div>
       </Screen>
+      {rol && <BottomNav rol={rol} />}
     </>
-  );
-}
-
-const ROLES = [
-  { value: 'remitente', label: 'Remitente' },
-  { value: 'viajero', label: 'Viajero' },
-];
-
-/** Cambiar de rol sin pasar por la pantalla de selección: guarda el rol y abre su Home. */
-function RoleSection() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const current = user ? roleStorage.get(user.uid) : null;
-
-  const change = (value: string) => {
-    if (!user || value === current) return;
-    const rol = value as Rol;
-    roleStorage.set(user.uid, rol);
-    navigate(`/home/${rol}`, { replace: true });
-  };
-
-  return (
-    <section className="mt-space-sm flex flex-col gap-space-xs">
-      <h2 className="px-1 text-label-caps uppercase text-on-surface-variant">Rol en Lapticon</h2>
-      <div className="flex flex-col gap-3 rounded-card bg-card p-space-md shadow-card">
-        <SegmentedControl label="Usar Lapticon como" options={ROLES} value={current ?? ''} onChange={change} />
-        <p className="text-body-sm text-on-surface-variant">
-          {current
-            ? 'Al cambiar de rol te llevamos a su inicio. Puedes volver a cambiarlo cuando quieras.'
-            : 'Elige cómo quieres usar Lapticon para ir a tu inicio.'}
-        </p>
-      </div>
-    </section>
   );
 }
 

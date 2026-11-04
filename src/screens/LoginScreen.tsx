@@ -11,6 +11,7 @@ import { Logo } from '../components/Logo';
 import { PasswordField } from '../components/PasswordField';
 import { Screen } from '../components/Screen';
 import { TextField } from '../components/TextField';
+import { GOOGLE_SIGNIN_ENABLED } from '../config/features';
 import { useForm } from '../hooks/useForm';
 import { errorCode, errorMessage } from '../utils/errorMessage';
 import { validateLogin, type LoginFormValues } from '../utils/validation';
@@ -114,11 +115,15 @@ export function LoginScreen() {
           </Button>
         </form>
 
-        <Divider label="o" />
+        {GOOGLE_SIGNIN_ENABLED && (
+          <>
+            <Divider label="o" />
 
-        <Button variant="google" onClick={onGoogle} loading={pending === 'google'} loadingText="Conectando con Google…" disabled={!!pending}>
-          Continuar con Google
-        </Button>
+            <Button variant="google" onClick={onGoogle} loading={pending === 'google'} loadingText="Conectando con Google…" disabled={!!pending}>
+              Continuar con Google
+            </Button>
+          </>
+        )}
       </section>
 
       <p className="mt-space-lg text-center text-body-lg text-on-surface">

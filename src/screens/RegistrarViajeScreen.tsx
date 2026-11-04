@@ -1,6 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ApiError } from '../api/apiClient';
 import { viajesApi } from '../api/viajesApi';
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
@@ -13,12 +12,8 @@ import { TopBar } from '../components/TopBar';
 import { useAsync } from '../hooks/useAsync';
 import { useCiudades } from '../hooks/useCiudades';
 import { useForm } from '../hooks/useForm';
-import { errorMessage } from '../utils/errorMessage';
-import { fechaMinimaViaje, normalizarVuelo, resolverCiudad, viajeActivo } from '../utils/envios';
+import { fechaMinimaViaje, mensajeErrorViaje, normalizarVuelo, resolverCiudad, viajeActivo } from '../utils/envios';
 import { validateTrip, type TripFormValues } from '../utils/validation';
-
-const MENSAJE_VIAJE_ACTIVO =
-  'Ya tienes un viaje activo. Cancélalo o márcalo como completado en «Mis viajes» para registrar otro.';
 
 /** Diseño Stitch «Registrar Viaje»: número de vuelo, origen, destino y fecha. */
 export function RegistrarViajeScreen() {
@@ -49,16 +44,16 @@ export function RegistrarViajeScreen() {
         ciudadDestino: resolverCiudad(values.ciudadDestino, ciudades) ?? values.ciudadDestino.trim(),
         fechaViaje: values.fechaViaje,
       });
-      navigate('/home/viajero', { replace: true, state: { flash: 'Viaje registrado correctamente.' } });
+      navigate('/viajero', { replace: true, state: { flash: 'Viaje registrado correctamente.' } });
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 400 ? MENSAJE_VIAJE_ACTIVO : errorMessage(err));
+      setError(mensajeErrorViaje(err));
       setSaving(false);
     }
   };
 
   return (
     <>
-      <TopBar title="Registrar viaje" backTo="/home/viajero" />
+      <TopBar title="Registrar viaje" backTo="/viajero" />
       <Screen withTopBar className="pb-8">
         <p className="pb-3 pt-3 text-body-md text-on-surface-variant">
           Ingresa los datos de tu próximo trayecto aéreo para habilitar la recepción de encomiendas.

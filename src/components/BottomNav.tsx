@@ -10,14 +10,14 @@ interface Item {
 
 const ITEMS: Record<Rol, Item[]> = {
   viajero: [
-    { to: '/home/viajero', icon: 'home', label: 'Inicio' },
+    { to: '/viajero', icon: 'home', label: 'Inicio' },
     { to: '/viajero/viajes', icon: 'luggage', label: 'Mis viajes' },
-    { to: '/perfil/editar', icon: 'account_circle', label: 'Perfil' },
+    { to: '/perfil', icon: 'account_circle', label: 'Perfil' },
   ],
   remitente: [
-    { to: '/home/remitente', icon: 'local_shipping', label: 'Inicio' },
+    { to: '/remitente', icon: 'local_shipping', label: 'Inicio' },
     { to: '/remitente/viajeros', icon: 'flight', label: 'Viajeros' },
-    { to: '/perfil/editar', icon: 'account_circle', label: 'Perfil' },
+    { to: '/perfil', icon: 'account_circle', label: 'Perfil' },
   ],
 };
 

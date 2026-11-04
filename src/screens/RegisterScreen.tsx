@@ -13,6 +13,7 @@ import { ProfileFields } from '../components/ProfileFields';
 import { Screen } from '../components/Screen';
 import { TextField } from '../components/TextField';
 import { TopBar } from '../components/TopBar';
+import { GOOGLE_SIGNIN_ENABLED } from '../config/features';
 import { useForm } from '../hooks/useForm';
 import { errorCode, errorMessage } from '../utils/errorMessage';
 import { validateProfile, validateRegister, type RegisterFormValues } from '../utils/validation';
@@ -167,19 +168,23 @@ export function RegisterScreen() {
 
         {!accountCreated && (
           <>
-            <div className="my-6">
-              <Divider label="o regístrate con" />
-            </div>
-            <Button
-              variant="google"
-              tone="white"
-              onClick={onGoogle}
-              loading={pending === 'google'}
-              loadingText="Conectando con Google…"
-              disabled={busy}
-            >
-              Registrarse con Google
-            </Button>
+            {GOOGLE_SIGNIN_ENABLED && (
+              <>
+                <div className="my-6">
+                  <Divider label="o regístrate con" />
+                </div>
+                <Button
+                  variant="google"
+                  tone="white"
+                  onClick={onGoogle}
+                  loading={pending === 'google'}
+                  loadingText="Conectando con Google…"
+                  disabled={busy}
+                >
+                  Registrarse con Google
+                </Button>
+              </>
+            )}
             <p className="mt-8 text-center text-body-md text-on-surface-variant">
               ¿Ya tienes cuenta?
               <Link to="/login" className="ml-1 text-label-lg text-navy hover:underline">

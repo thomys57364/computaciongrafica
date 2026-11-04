@@ -1,19 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encomiendasApi, type Encomienda, type EstadoEncomienda } from '../api/encomiendasApi';
-import { viajesApi, type ViajeDisponible } from '../api/viajesApi';
 import { useAuth } from '../auth/AuthContext';
 import { Alert } from '../components/Alert';
 import { BottomNav } from '../components/BottomNav';
 import { Button } from '../components/Button';
+import { ConfirmInline } from '../components/ConfirmInline';
 import { HomeHeader } from '../components/HomeHeader';
 import { Icon } from '../components/Icon';
 import { EmptyState, LoadState } from '../components/LoadState';
 import { StatusBadge, type BadgeTone } from '../components/StatusBadge';
 import { useAsync } from '../hooks/useAsync';
 import { useFlash } from '../hooks/useFlash';
+import { useViajerosDeTomadas } from '../hooks/useViajerosDeTomadas';
 import { errorMessage } from '../utils/errorMessage';
-import { ETIQUETA_ENCOMIENDA, agruparEncomiendas, formatearFecha, formatearValor, rutasUnicas } from '../utils/envios';
+import { ETIQUETA_ENCOMIENDA, agruparEncomiendas, formatearFecha, formatearValor } from '../utils/envios';
 import type { PrefillEncomienda } from './NuevaEncomiendaScreen';
 
 const PESTAÑAS: { estado: EstadoEncomienda; label: string }[] = [
@@ -37,11 +38,11 @@ const TONO: Record<EstadoEncomienda, BadgeTone> = {
   recibida: 'done',
 };
 
-/** Diseño Stitch «Home del Remitente»: banner, pestañas por estado y botón «Nueva encomienda». */
+/** Diseño Stitch «Home del Remitente»: banner «Publicar» (única entrada a Nueva encomienda) y pestañas por estado. */
 export function HomeRemitenteScreen() {
   const { profile, user, logout } = useAuth();
   const navigate = useNavigate();
-  const { flash, dismiss } = useFlash();
+  const { flash, tone, dismiss } = useFlash();
   const nombre = (typeof profile?.nombre === 'string' && profile.nombre) || user?.displayName?.split(' ')[0] || '';
   const apellido = typeof profile?.apellido === 'string' ? profile.apellido : '';
 
@@ -51,8 +52,10 @@ export function HomeRemitenteScreen() {
   const [pestaña, setPestaña] = useState<EstadoEncomienda>('disponible');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const nueva = (prefill?: PrefillEncomienda) => navigate('/remitente/encomienda/nueva', { state: { prefill } });
+  const nueva = (prefill?: PrefillEncomienda) => navigate('/remitente/encomiendas/nueva', { state: { prefill } });
 
   const marcarRecibida = async (e: Encomienda) => {
     setActionError(null);
@@ -67,12 +70,28 @@ export function HomeRemitenteScreen() {
     }
   };
 
+  const eliminar = async (e: Encomienda) => {
+    setActionError(null);
+    setNotice(null);
+    setBusyId(e._id);
+    try {
+      await encomiendasApi.eliminar(e._id);
+      setConfirmId(null);
+      setNotice('Encomienda eliminada.');
+      reload();
+    } catch (err) {
+      setActionError(errorMessage(err));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const lista = grupos[pestaña];
 
   return (
     <>
-      <HomeHeader nombre={nombre} apellido={apellido} />
-      <main className="pb-safe mx-auto flex min-h-[100dvh] w-full max-w-app flex-col gap-space-md px-margin-mobile pb-40 pt-[calc(4.5rem+env(safe-area-inset-top,0px))]">
+      <HomeHeader rol="remitente" nombre={nombre} apellido={apellido} />
+      <main className="mx-auto flex min-h-[100dvh] w-full max-w-app flex-col gap-space-md px-margin-mobile pb-24 pt-[calc(4.5rem+env(safe-area-inset-top,0px))]">
         <section className="flex flex-col gap-space-sm">
           <div>
             <h1 className="text-headline-md text-on-surface">Hola{nombre ? `, ${nombre}` : ''} 👋</h1>
@@ -96,8 +115,13 @@ export function HomeRemitenteScreen() {
         </section>
 
         {flash && (
-          <Alert tone="success" onDismiss={dismiss}>
+          <Alert tone={tone} onDismiss={dismiss}>
             {flash}
+          </Alert>
+        )}
+        {notice && (
+          <Alert tone="success" onDismiss={() => setNotice(null)}>
+            {notice}
           </Alert>
         )}
         {actionError && <Alert onDismiss={() => setActionError(null)}>{actionError}</Alert>}
@@ -137,7 +161,12 @@ export function HomeRemitenteScreen() {
                   key={e._id}
                   className={`flex flex-col gap-3 overflow-hidden rounded-card bg-card pt-4 shadow-card ${e.estado === 'vencida' ? 'opacity-90' : ''}`}
                 >
-                  <div className="flex items-center justify-between gap-2 px-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/remitente/encomiendas/${e._id}`, { state: { encomienda: e } })}
+                    aria-label={`Ver detalle de ${e.ciudadOrigen} → ${e.ciudadDestino}`}
+                    className="flex items-center justify-between gap-2 px-4 text-left"
+                  >
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-chip">
                         <Icon name={e.estado === 'vencida' ? 'history' : 'flight_takeoff'} className="text-[18px] text-navy" />
@@ -149,7 +178,7 @@ export function HomeRemitenteScreen() {
                     <StatusBadge tone={TONO[e.estado]} icon={e.estado === 'tomada' || e.estado === 'recibida' ? 'check_circle' : undefined}>
                       {ETIQUETA_ENCOMIENDA[e.estado]}
                     </StatusBadge>
-                  </div>
+                  </button>
                   <p className="px-4 text-body-sm text-on-surface-variant">{e.observaciones || 'Sin observaciones'}</p>
                   {(e.estado === 'tomada' || e.estado === 'recibida') && (
                     <p className="flex items-center gap-1.5 px-4 text-label-md text-on-surface">
@@ -165,49 +194,74 @@ export function HomeRemitenteScreen() {
                       Vence el {formatearFecha(e.fechaVencimiento)}
                     </p>
                   )}
-                  <div className="flex items-center justify-between gap-3 bg-field/50 px-4 py-3">
-                    <span className="text-headline-sm font-bold text-wine">{formatearValor(e.valor, e.moneda)}</span>
-                    {e.estado === 'disponible' && (
-                      <Button
-                        variant="outline"
-                        trailingIcon="edit"
-                        onClick={() => navigate('/remitente/encomienda/nueva', { state: { editar: e } })}
-                        className="!min-h-10 !w-auto !px-3 text-label-md"
-                      >
-                        Editar
-                      </Button>
-                    )}
-                    {e.estado === 'tomada' && (
-                      <Button
-                        variant="secondary"
-                        trailingIcon="task_alt"
+                  {confirmId === e._id ? (
+                    <div className="px-4 pb-4">
+                      <ConfirmInline
+                        message="¿Eliminar esta encomienda? Los viajeros dejarán de verla."
+                        confirmLabel="Sí, eliminar"
+                        loadingText="Eliminando…"
                         loading={busyId === e._id}
-                        loadingText="Guardando…"
-                        disabled={busyId !== null}
-                        onClick={() => void marcarRecibida(e)}
-                        className="!min-h-10 !w-auto !px-3 text-label-md"
-                      >
-                        Marcar recibida
-                      </Button>
-                    )}
-                    {e.estado === 'vencida' && (
-                      <Button
-                        trailingIcon="refresh"
-                        onClick={() =>
-                          nueva({
-                            ciudadOrigen: e.ciudadOrigen,
-                            ciudadDestino: e.ciudadDestino,
-                            observaciones: e.observaciones ?? '',
-                            moneda: e.moneda,
-                            valor: String(e.valor),
-                          })
-                        }
-                        className="!min-h-10 !w-auto !px-3 text-label-md"
-                      >
-                        Republicar
-                      </Button>
-                    )}
-                  </div>
+                        onConfirm={() => void eliminar(e)}
+                        onCancel={() => setConfirmId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-3 bg-field/50 px-4 py-3">
+                      <span className="text-headline-sm font-bold text-wine">{formatearValor(e.valor, e.moneda)}</span>
+                      {(e.estado === 'disponible' || e.estado === 'vencida') && (
+                        <span className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            trailingIcon="delete"
+                            onClick={() => setConfirmId(e._id)}
+                            disabled={busyId !== null}
+                            className="!min-h-10 !w-auto !px-3 text-label-md"
+                          >
+                            Eliminar
+                          </Button>
+                          {e.estado === 'disponible' ? (
+                            <Button
+                              variant="outline"
+                              trailingIcon="edit"
+                              onClick={() => navigate(`/remitente/encomiendas/${e._id}/editar`, { state: { editar: e } })}
+                              className="!min-h-10 !w-auto !px-3 text-label-md"
+                            >
+                              Editar
+                            </Button>
+                          ) : (
+                            <Button
+                              trailingIcon="refresh"
+                              onClick={() =>
+                                nueva({
+                                  ciudadOrigen: e.ciudadOrigen,
+                                  ciudadDestino: e.ciudadDestino,
+                                  observaciones: e.observaciones ?? '',
+                                  moneda: e.moneda,
+                                  valor: String(e.valor),
+                                })
+                              }
+                              className="!min-h-10 !w-auto !px-3 text-label-md"
+                            >
+                              Republicar
+                            </Button>
+                          )}
+                        </span>
+                      )}
+                      {e.estado === 'tomada' && (
+                        <Button
+                          variant="secondary"
+                          trailingIcon="task_alt"
+                          loading={busyId === e._id}
+                          loadingText="Guardando…"
+                          disabled={busyId !== null}
+                          onClick={() => void marcarRecibida(e)}
+                          className="!min-h-10 !w-auto !px-3 text-label-md"
+                        >
+                          Marcar recibida
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </article>
               ))
             )}
@@ -215,59 +269,14 @@ export function HomeRemitenteScreen() {
         )}
 
         <div className="mt-auto flex items-center justify-center gap-4 pt-space-lg text-body-sm text-muted">
-          <button type="button" onClick={() => navigate('/rol')} className="underline-offset-2 hover:underline">
-            Cambiar de rol
-          </button>
-          <span aria-hidden="true">·</span>
           <button type="button" onClick={() => void logout()} className="underline-offset-2 hover:underline">
             Cerrar sesión
           </button>
         </div>
+        <div aria-hidden="true" className="pb-safe" />
       </main>
 
-      <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40">
-        <div className="mx-auto flex max-w-app justify-end px-4">
-          <button
-            type="button"
-            onClick={() => nueva()}
-            aria-label="Nueva encomienda"
-            className="pointer-events-auto flex h-14 items-center gap-2 rounded-full bg-wine px-5 text-title-md text-white shadow-raised transition-all hover:bg-wine-pressed active:scale-95"
-          >
-            <Icon name="add" className="text-[24px]" />
-            Nueva encomienda
-          </button>
-        </div>
-      </div>
       <BottomNav rol="remitente" />
     </>
   );
-}
-
-/**
- * Nombre y fecha del viajero que tomó cada encomienda. El backend solo guarda su uid (`viajeroId`), así que se
- * busca en los viajes de la misma ruta (GET /api/viajes/disponibles trae el nombre). Si no aparece, la tarjeta
- * muestra un texto genérico.
- */
-function useViajerosDeTomadas(encomiendas: Encomienda[]): Record<string, ViajeDisponible> {
-  const [viajeros, setViajeros] = useState<Record<string, ViajeDisponible>>({});
-  useEffect(() => {
-    const conViajero = encomiendas.filter((e) => e.viajeroId && (e.estado === 'tomada' || e.estado === 'recibida'));
-    if (conViajero.length === 0) return;
-    let active = true;
-    void Promise.allSettled(rutasUnicas(conViajero).map((r) => viajesApi.disponiblesEnRuta(r.origen, r.destino))).then(
-      (resultados) => {
-        if (!active) return;
-        const mapa: Record<string, ViajeDisponible> = {};
-        for (const r of resultados) {
-          if (r.status !== 'fulfilled') continue;
-          for (const v of r.value) mapa[v.uid] ??= v;
-        }
-        setViajeros(mapa);
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [encomiendas]);
-  return viajeros;
 }

@@ -5,6 +5,7 @@ import { viajesApi, type EstadoViaje, type Viaje } from '../api/viajesApi';
 import { Alert } from '../components/Alert';
 import { BottomNav } from '../components/BottomNav';
 import { Button } from '../components/Button';
+import { ConfirmInline } from '../components/ConfirmInline';
 import { Icon } from '../components/Icon';
 import { EmptyState, LoadState } from '../components/LoadState';
 import { RouteStrip } from '../components/RouteStrip';
@@ -67,7 +68,7 @@ export function MisViajesScreen() {
 
   return (
     <>
-      <TopBar title="Mis viajes" backTo="/home/viajero" />
+      <TopBar title="Mis viajes" backTo="/viajero" />
       <Screen withTopBar className="gap-space-md pb-24">
         <div className="pt-3" />
         {notice && (
@@ -103,35 +104,20 @@ export function MisViajesScreen() {
                   {esViajeActivo(v) && (
                     <TomadasDelViaje
                       tomadas={data?.tomadas ?? []}
-                      onOpen={(e) => navigate(`/viajero/encomienda/${e._id}`, { state: { encomienda: e } })}
+                      onOpen={(e) => navigate(`/viajero/encomiendas/${e._id}`, { state: { encomienda: e } })}
                     />
                   )}
 
                   {esViajeActivo(v) &&
                     (confirmId === v._id ? (
-                      <div className="flex flex-col gap-2 rounded-control bg-error-bg p-3">
-                        <p className="text-body-sm font-medium text-wine">
-                          ¿Cancelar este viaje? Dejarás de recibir encomiendas en esta ruta.
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => setConfirmId(null)}
-                            disabled={busyId === v._id}
-                            className="!min-h-11"
-                          >
-                            No, volver
-                          </Button>
-                          <Button
-                            loading={busyId === v._id}
-                            loadingText="Cancelando…"
-                            onClick={() => void cambiarEstado(v, 'cancelado', 'Viaje cancelado.')}
-                            className="!min-h-11"
-                          >
-                            Sí, cancelar
-                          </Button>
-                        </div>
-                      </div>
+                      <ConfirmInline
+                        message="¿Cancelar este viaje? Dejarás de recibir encomiendas en esta ruta."
+                        confirmLabel="Sí, cancelar"
+                        loadingText="Cancelando…"
+                        loading={busyId === v._id}
+                        onConfirm={() => void cambiarEstado(v, 'cancelado', 'Viaje cancelado.')}
+                        onCancel={() => setConfirmId(null)}
+                      />
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
                         <Button
@@ -160,7 +146,7 @@ export function MisViajesScreen() {
             )}
 
             <div className="flex flex-col gap-2 pt-space-sm">
-              <Button trailingIcon="add" onClick={() => navigate('/viajero/viaje/nuevo')} disabled={hayActivo}>
+              <Button trailingIcon="add" onClick={() => navigate('/viajero/viajes/nuevo')} disabled={hayActivo}>
                 Registrar nuevo viaje
               </Button>
               {hayActivo && (

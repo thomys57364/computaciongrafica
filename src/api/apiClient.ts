@@ -6,6 +6,7 @@ import { serverWake } from './serverWake';
  * - Agrega `Authorization: Bearer <idToken>` usando getIdToken() (el SDK lo renueva solo).
  * - Timeout largo (60 s) porque Render gratis puede tardar en despertar.
  * - Convierte cualquier fallo en ApiError con un mensaje en español listo para mostrar.
+ * - Solo reintenta los GET (un POST repetido podría duplicar una encomienda).
  */
 
 // Por defecto se llama a /api en el mismo origen: en desarrollo lo reenvía el proxy de Vite y en
@@ -98,11 +99,19 @@ async function readBody(res: Response): Promise<unknown> {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  let res = await send(path, options, false);
+  const idempotent = (options.method ?? 'GET') === 'GET';
+  let res: Response;
+  try {
+    res = await send(path, options, false);
+  } catch (err) {
+    // Render despertando puede cortar la primera conexión: un GET se puede repetir sin riesgo.
+    if (!idempotent || !(err instanceof ApiError) || err.kind === 'no-session') throw err;
+    res = await send(path, options, false);
+  }
 
   // Render dormido: el proxy del hosting puede cortar antes de que despierte (502/503/504).
   // Para entonces el backend ya está arrancando, así que un reintento suele bastar.
-  if (res.status === 502 || res.status === 503 || res.status === 504) {
+  if (idempotent && (res.status === 502 || res.status === 503 || res.status === 504)) {
     res = await send(path, options, false);
   }
 

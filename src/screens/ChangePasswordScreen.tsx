@@ -27,7 +27,7 @@ export function ChangePasswordScreen() {
   const [done, setDone] = useState(false);
 
   // Cuentas solo de Google: no tienen contraseña que cambiar.
-  if (!hasPasswordProvider(user)) return <Navigate to="/perfil/editar" replace />;
+  if (!hasPasswordProvider(user)) return <Navigate to="/perfil" replace />;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -51,7 +51,7 @@ export function ChangePasswordScreen() {
 
   return (
     <>
-      <TopBar title="Seguridad de la cuenta" backTo="/perfil/editar" />
+      <TopBar title="Seguridad de la cuenta" backTo="/perfil" />
       <Screen withTopBar className="pb-space-xl">
         <div className="flex flex-col gap-space-lg pt-space-md">
           <div className="flex flex-col items-center pt-space-xs text-center">
@@ -78,7 +78,7 @@ export function ChangePasswordScreen() {
                   Tu contraseña ha sido modificada con éxito. Usa tu nueva clave en tu próximo inicio de sesión.
                 </p>
               </div>
-              <Button variant="secondary" onClick={() => navigate('/perfil/editar', { replace: true })}>
+              <Button variant="secondary" onClick={() => navigate('/perfil', { replace: true })}>
                 <span className="inline-flex items-center gap-2">
                   <Icon name="person" className="text-[20px]" />
                   Volver al perfil

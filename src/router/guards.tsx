@@ -9,9 +9,8 @@ function useEntryPath(): string {
   const { status, user } = useAuth();
   switch (status) {
     case 'ready': {
-      const rol = user ? roleStorage.get(user.uid) : null;
-      // Con rol guardado (app reabierta) va directo a su home; recién logueado, a elegir rol.
-      return rol ? `/home/${rol}` : '/rol';
+      // Home del último modo usado (o remitente en el primer ingreso).
+      return user ? `/${roleStorage.actual(user.uid)}` : '/login';
     }
     case 'needsProfile':
     case 'registering':

@@ -39,7 +39,7 @@ export function ChangeEmailScreen() {
   const [resendFeedback, setResendFeedback] = useState<{ ok: boolean; text: string } | null>(null);
   const cooldown = useCooldown(RESEND_COOLDOWN_S);
 
-  if (!hasPasswordProvider(user)) return <Navigate to="/perfil/editar" replace />;
+  if (!hasPasswordProvider(user)) return <Navigate to="/perfil" replace />;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -80,7 +80,7 @@ export function ChangeEmailScreen() {
 
   return (
     <>
-      <TopBar title="Seguridad de la cuenta" backTo="/perfil/editar" />
+      <TopBar title="Seguridad de la cuenta" backTo="/perfil" />
       <Screen withTopBar className="pb-space-xl">
         <div className="flex flex-col gap-space-lg py-space-md">
           <div className="flex flex-col items-center gap-space-sm pt-space-xs text-center">
@@ -157,7 +157,7 @@ export function ChangeEmailScreen() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => navigate('/perfil/editar', { replace: true })}
+                  onClick={() => navigate('/perfil', { replace: true })}
                   className="flex items-center gap-1 py-2 text-label-md text-on-surface-variant hover:text-on-surface"
                 >
                   <span>Volver al perfil</span>

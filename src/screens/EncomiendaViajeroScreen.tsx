@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ApiError } from '../api/apiClient';
 import { encomiendasApi, type Encomienda } from '../api/encomiendasApi';
 import { viajesApi } from '../api/viajesApi';
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
-import { EmptyState, LoadState } from '../components/LoadState';
+import { LoadState } from '../components/LoadState';
 import { RouteStrip } from '../components/RouteStrip';
 import { Screen } from '../components/Screen';
 import { StatusBadge } from '../components/StatusBadge';
@@ -33,7 +33,7 @@ export function EncomiendaViajeroScreen() {
   const { data, loading, error, reload } = useAsync(async () => {
     const activo = viajeActivo(await viajesApi.listar());
     let encomienda: Encomienda | null = fromList && fromList._id === id ? fromList : null;
-    // Si se abrió el enlace directamente (sin pasar por la lista) se busca en la ruta del viaje activo.
+    // No existe GET /api/encomiendas/:id: al recargar o abrir el enlace directo se busca en la ruta del viaje activo.
     if (!encomienda && activo && id) {
       const { disponibles, tomadas } = await encomiendasApi.enRuta(activo.ciudadOrigen, activo.ciudadDestino);
       encomienda = [...disponibles, ...tomadas].find((e) => e._id === id) ?? null;
@@ -58,7 +58,7 @@ export function EncomiendaViajeroScreen() {
     setTaking(true);
     try {
       await encomiendasApi.tomar(e._id);
-      navigate('/home/viajero', {
+      navigate('/viajero', {
         replace: true,
         state: { flash: 'Encomienda tomada. Coordina la entrega con el remitente.' },
       });
@@ -70,15 +70,22 @@ export function EncomiendaViajeroScreen() {
 
   return (
     <>
-      <TopBar title="Detalle de encomienda" backTo="/home/viajero" />
+      <TopBar title="Detalle de encomienda" backTo="/viajero" />
       <Screen withTopBar className="gap-space-md pb-8">
         <div className="pt-3" />
         <LoadState loading={loading} error={error} onRetry={reload} />
 
         {!loading && !error && !e && (
-          <EmptyState icon="inventory_2" title="No encontramos esta encomienda">
-            Puede que ya no esté disponible o que no sea de tu ruta.
-          </EmptyState>
+          <Navigate
+            to="/viajero"
+            replace
+            state={{
+              flash: activo
+                ? 'No encontramos esa encomienda: puede que ya no esté disponible o que no sea de tu ruta.'
+                : 'Para ver encomiendas necesitas un viaje activo. Registra tu viaje primero.',
+              flashTone: 'info',
+            }}
+          />
         )}
 
         {!loading && !error && e && (
@@ -149,7 +156,7 @@ export function EncomiendaViajeroScreen() {
                   <Alert
                     tone="info"
                     action={
-                      <Link to="/viajero/viaje/nuevo" className="font-semibold underline">
+                      <Link to="/viajero/viajes/nuevo" className="font-semibold underline">
                         Registrar viaje
                       </Link>
                     }

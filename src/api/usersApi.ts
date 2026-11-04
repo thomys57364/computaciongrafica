@@ -1,3 +1,4 @@
+import { unwrapProfile } from '../utils/profileDiff';
 import { ApiError, apiClient } from './apiClient';
 
 export interface ProfileData {
@@ -10,12 +11,22 @@ export interface ProfileData {
 /** Perfil tal como lo devuelve el backend (puede traer campos extra). */
 export type UserProfile = Partial<ProfileData> & Record<string, unknown>;
 
+/** Las respuestas pueden venir envueltas ({ usuario: {...} }): se entregan siempre planas. */
+function plano(data: unknown): UserProfile {
+  const profile = unwrapProfile(data) as UserProfile;
+  // Solo en desarrollo: si el backend cambia la forma, se ve en consola en vez de un formulario vacío.
+  if (import.meta.env.DEV && profile && !('nombre' in profile)) {
+    console.warn('[Lapticon] La respuesta del perfil no trae "nombre":', data);
+  }
+  return profile;
+}
+
 export const usersApi = {
   /** POST /api/users/register — el backend lo trata como "registrar/actualizar", así que reintentar es seguro. */
-  register: (data: ProfileData) => apiClient.post<UserProfile>('/api/users/register', data),
-  get: (uid: string) => apiClient.get<UserProfile>(`/api/users/${encodeURIComponent(uid)}`),
-  update: (uid: string, data: Partial<ProfileData>) =>
-    apiClient.put<UserProfile>(`/api/users/${encodeURIComponent(uid)}`, data),
+  register: async (data: ProfileData) => plano(await apiClient.post<unknown>('/api/users/register', data)),
+  get: async (uid: string) => plano(await apiClient.get<unknown>(`/api/users/${encodeURIComponent(uid)}`)),
+  update: async (uid: string, data: Partial<ProfileData>) =>
+    plano(await apiClient.put<unknown>(`/api/users/${encodeURIComponent(uid)}`, data)),
 };
 
 export type ProfileLookup = { status: 'complete'; profile: UserProfile } | { status: 'missing' };

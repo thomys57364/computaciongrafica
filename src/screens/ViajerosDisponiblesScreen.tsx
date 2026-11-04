@@ -82,7 +82,7 @@ export function ViajerosDisponiblesScreen() {
 
   return (
     <>
-      <TopBar title="Viajeros disponibles" backTo="/home/remitente" />
+      <TopBar title="Viajeros disponibles" backTo="/remitente" />
       <Screen withTopBar className="gap-space-md pb-24">
         <p className="pt-3 text-body-md text-on-surface-variant">
           Mira quién viaja por tu ruta y lleva encomiendas.

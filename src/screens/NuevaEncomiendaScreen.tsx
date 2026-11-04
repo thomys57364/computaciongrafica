@@ -1,15 +1,17 @@
 import { useState, type FormEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { encomiendasApi, type Encomienda } from '../api/encomiendasApi';
 import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { CityField } from '../components/CityField';
+import { LoadState } from '../components/LoadState';
 import { Screen } from '../components/Screen';
 import { SectionCard } from '../components/SectionCard';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { TextAreaField } from '../components/TextAreaField';
 import { TextField } from '../components/TextField';
 import { TopBar } from '../components/TopBar';
+import { useAsync } from '../hooks/useAsync';
 import { useCiudades } from '../hooks/useCiudades';
 import { useForm } from '../hooks/useForm';
 import { errorMessage } from '../utils/errorMessage';
@@ -24,12 +26,50 @@ const MONEDAS = [
   { value: 'COP', label: 'COP ($)' },
 ];
 
-/** Diseño Stitch «Nueva Encomienda»: ruta, detalles del paquete y compensación al viajero. */
+/**
+ * Diseño Stitch «Nueva Encomienda». En /remitente/encomiendas/nueva publica una; en …/:id/editar corrige una
+ * disponible. Al recargar la edición se pierde la encomienda de la navegación, así que se busca en
+ * GET /api/encomiendas (no existe GET por id); si ya no está disponible se vuelve al Home con un aviso.
+ */
 export function NuevaEncomiendaScreen() {
-  const navigate = useNavigate();
+  const { id } = useParams();
   const state = useLocation().state as { prefill?: PrefillEncomienda; editar?: Encomienda } | null;
+  const desdeLista = state?.editar && state.editar._id === id ? state.editar : null;
+
+  if (!id) return <EncomiendaForm editar={null} prefill={state?.prefill} />;
+  if (desdeLista) return <EncomiendaForm editar={desdeLista} />;
+  return <EditarDesdeLista id={id} />;
+}
+
+function EditarDesdeLista({ id }: { id: string }) {
+  const { data, loading, error, reload } = useAsync(async () =>
+    (await encomiendasApi.listar()).find((e) => e._id === id) ?? null,
+  );
+  if (loading || error) {
+    return (
+      <>
+        <TopBar title="Editar encomienda" backTo="/remitente" />
+        <Screen withTopBar className="pb-8 pt-3">
+          <LoadState loading={loading} error={error} onRetry={reload} />
+        </Screen>
+      </>
+    );
+  }
+  if (!data || data.estado !== 'disponible') {
+    return (
+      <Navigate
+        to="/remitente"
+        replace
+        state={{ flash: 'Esa encomienda ya no se puede editar: solo se editan las disponibles.', flashTone: 'info' }}
+      />
+    );
+  }
+  return <EncomiendaForm editar={data} />;
+}
+
+function EncomiendaForm({ editar, prefill: prefillNueva }: { editar: Encomienda | null; prefill?: PrefillEncomienda }) {
+  const navigate = useNavigate();
   // Editar: el backend no permite modificar una encomienda, así que se publica la corregida y se retira la anterior.
-  const editar = state?.editar ?? null;
   const prefill: PrefillEncomienda | undefined = editar
     ? {
         ciudadOrigen: editar.ciudadOrigen,
@@ -38,7 +78,7 @@ export function NuevaEncomiendaScreen() {
         moneda: editar.moneda,
         valor: String(editar.valor),
       }
-    : state?.prefill;
+    : prefillNueva;
   const { ciudades, loading: loadingCiudades, failed: ciudadesFailed, retry } = useCiudades();
 
   const { values, setValues, errors, bind, validateNow } = useForm<ParcelFormValues>(
@@ -73,7 +113,7 @@ export function NuevaEncomiendaScreen() {
     try {
       await encomiendasApi.crear(datos);
       if (!editar) {
-        navigate('/home/remitente', { replace: true, state: { flash: 'Encomienda publicada correctamente.' } });
+        navigate('/remitente', { replace: true, state: { flash: 'Encomienda publicada correctamente.' } });
         return;
       }
       // La nueva ya está publicada: ahora se retira la anterior (si falla, se avisa en lugar de ocultarlo).
@@ -83,7 +123,7 @@ export function NuevaEncomiendaScreen() {
       } catch {
         flash = 'Publicamos los cambios, pero no pudimos retirar la versión anterior: verás las dos en «Disponibles».';
       }
-      navigate('/home/remitente', { replace: true, state: { flash } });
+      navigate('/remitente', { replace: true, state: { flash } });
     } catch (err) {
       setError(errorMessage(err));
       setSaving(false);
@@ -94,7 +134,7 @@ export function NuevaEncomiendaScreen() {
 
   return (
     <>
-      <TopBar title={editar ? 'Editar encomienda' : 'Nueva encomienda'} backTo="/home/remitente" />
+      <TopBar title={editar ? 'Editar encomienda' : 'Nueva encomienda'} backTo="/remitente" />
       <Screen withTopBar className="pb-8">
         <p className="pb-3 pt-3 text-body-md text-on-surface-variant">
           {editar
