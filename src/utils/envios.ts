@@ -76,6 +76,11 @@ export const ETIQUETA_ENCOMIENDA: Record<EstadoEncomienda, string> = {
   recibida: 'Recibida',
 };
 
+/** Identificador corto para mostrar: "#ENC-84920A" (últimos 6 caracteres del _id). */
+export function idCorto(id: string): string {
+  return `#ENC-${id.slice(-6).toUpperCase()}`;
+}
+
 /** Reparte las encomiendas por pestaña del Home del remitente. */
 export function agruparEncomiendas(lista: Encomienda[]): Record<EstadoEncomienda, Encomienda[]> {
   const grupos: Record<EstadoEncomienda, Encomienda[]> = { disponible: [], tomada: [], vencida: [], recibida: [] };

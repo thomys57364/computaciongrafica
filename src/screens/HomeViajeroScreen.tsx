@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { encomiendasApi } from '../api/encomiendasApi';
+import { encomiendasApi, type Encomienda } from '../api/encomiendasApi';
 import { viajesApi } from '../api/viajesApi';
 import { useAuth } from '../auth/AuthContext';
 import { Alert } from '../components/Alert';
@@ -23,11 +23,16 @@ export function HomeViajeroScreen() {
 
   const { data, loading, error, reload } = useAsync(async () => {
     const activo = viajeActivo(await viajesApi.listar());
-    const encomiendas = activo ? await encomiendasApi.disponiblesEnRuta(activo.ciudadOrigen, activo.ciudadDestino) : [];
-    return { activo, encomiendas };
+    const { disponibles, tomadas } = activo
+      ? await encomiendasApi.buscar(activo.ciudadOrigen, activo.ciudadDestino)
+      : { disponibles: [], tomadas: [] };
+    return { activo, encomiendas: disponibles, tomadas };
   });
   const activo = data?.activo ?? null;
   const encomiendas = data?.encomiendas ?? [];
+  const tomadas = data?.tomadas ?? [];
+
+  const verDetalle = (e: Encomienda) => navigate(`/viajero/encomienda/${e._id}`, { state: { encomienda: e } });
 
   return (
     <>
@@ -104,25 +109,22 @@ export function HomeViajeroScreen() {
                     Cuando un remitente publique un envío en tu ruta, lo verás aquí.
                   </EmptyState>
                 ) : (
-                  encomiendas.map((e) => (
-                    <article key={e._id} className="flex flex-col gap-2.5 rounded-card bg-card p-space-md shadow-card">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 flex-col gap-1">
-                          <span className="flex items-center gap-1.5 text-label-md font-bold text-air">
-                            <Icon name="near_me" className="text-[16px]" />
-                            <span className="truncate">
-                              {e.ciudadOrigen} → {e.ciudadDestino}
-                            </span>
-                          </span>
-                          <p className="text-body-md leading-snug text-on-surface">{e.observaciones || 'Sin observaciones'}</p>
-                        </div>
-                        <span className="shrink-0 text-headline-sm font-bold text-wine">
-                          {formatearValor(e.valor, e.moneda)}
-                        </span>
-                      </div>
-                    </article>
-                  ))
+                  encomiendas.map((e) => <EncomiendaCard key={e._id} e={e} onOpen={() => verDetalle(e)} />)
                 )}
+              </section>
+            )}
+
+            {activo && tomadas.length > 0 && (
+              <section className="flex flex-col gap-space-sm pt-1">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-title-md font-bold text-on-surface">Encomiendas que tomaste</h2>
+                  <span className="rounded-full bg-success-bg px-2 py-0.5 text-label-caps font-semibold text-success-strong">
+                    {tomadas.length}
+                  </span>
+                </div>
+                {tomadas.map((e) => (
+                  <EncomiendaCard key={e._id} e={e} onOpen={() => verDetalle(e)} />
+                ))}
               </section>
             )}
           </>
@@ -140,5 +142,27 @@ export function HomeViajeroScreen() {
       </main>
       <BottomNav rol="viajero" />
     </>
+  );
+}
+
+function EncomiendaCard({ e, onOpen }: { e: Encomienda; onOpen: () => void }) {
+  return (
+    <article className="flex flex-col gap-2.5 rounded-card bg-card p-space-md shadow-card">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className="flex items-center gap-1.5 text-label-md font-bold text-air">
+            <Icon name="near_me" className="text-[16px]" />
+            <span className="truncate">
+              {e.ciudadOrigen} → {e.ciudadDestino}
+            </span>
+          </span>
+          <p className="text-body-md leading-snug text-on-surface">{e.observaciones || 'Sin observaciones'}</p>
+        </div>
+        <span className="shrink-0 text-headline-sm font-bold text-wine">{formatearValor(e.valor, e.moneda)}</span>
+      </div>
+      <Button variant="secondary" trailingIcon="chevron_right" onClick={onOpen} className="!min-h-10 text-label-md">
+        {e.estado === 'tomada' ? 'Ver encomienda' : 'Ver detalle'}
+      </Button>
+    </article>
   );
 }

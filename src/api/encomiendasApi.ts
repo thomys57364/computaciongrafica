@@ -43,6 +43,18 @@ export const encomiendasApi = {
       ),
       'encomiendas',
     ),
+  /** GET /api/encomiendas/buscar — disponibles y tomadas por mí (viajero) en una ruta. */
+  buscar: async (origen: string, destino: string) => {
+    const data = await apiClient.get<{ disponibles?: unknown; tomadas?: unknown } | null>(
+      `/api/encomiendas/buscar?origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}`,
+    );
+    return {
+      disponibles: Array.isArray(data?.disponibles) ? (data.disponibles as Encomienda[]) : [],
+      tomadas: Array.isArray(data?.tomadas) ? (data.tomadas as Encomienda[]) : [],
+    };
+  },
+  /** PUT /api/encomiendas/tomar/:id — el viajero toma una encomienda disponible. */
+  tomar: (id: string) => apiClient.put<unknown>(`/api/encomiendas/tomar/${encodeURIComponent(id)}`, undefined),
   /** PUT /api/encomiendas/:id/estado — remitente o viajero asignado. */
   cambiarEstado: (id: string, estado: EstadoEncomienda) =>
     apiClient.put<unknown>(`/api/encomiendas/${encodeURIComponent(id)}/estado`, { estado }),

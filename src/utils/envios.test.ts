@@ -7,6 +7,7 @@ import {
   formatearFecha,
   formatearValor,
   fechaMinimaViaje,
+  idCorto,
   normalizarVuelo,
   resolverCiudad,
   viajeActivo,
@@ -66,6 +67,10 @@ describe('Utilidades de envíos', () => {
     expect(grupos.disponible).toHaveLength(1);
     expect(grupos.tomada).toHaveLength(2);
     expect(grupos.recibida).toHaveLength(0);
+  });
+
+  it('genera un id corto', () => {
+    expect(idCorto('65f1c0ffee84920a')).toBe('#ENC-84920A');
   });
 
   it('ordena y limpia la lista de ciudades', () => {
