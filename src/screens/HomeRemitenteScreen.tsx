@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { encomiendasApi, type Encomienda, type EstadoEncomienda } from '../api/encomiendasApi';
+import { viajesApi, type ViajeDisponible } from '../api/viajesApi';
 import { useAuth } from '../auth/AuthContext';
 import { Alert } from '../components/Alert';
 import { BottomNav } from '../components/BottomNav';
@@ -12,7 +13,7 @@ import { StatusBadge, type BadgeTone } from '../components/StatusBadge';
 import { useAsync } from '../hooks/useAsync';
 import { useFlash } from '../hooks/useFlash';
 import { errorMessage } from '../utils/errorMessage';
-import { ETIQUETA_ENCOMIENDA, agruparEncomiendas, formatearFecha, formatearValor } from '../utils/envios';
+import { ETIQUETA_ENCOMIENDA, agruparEncomiendas, formatearFecha, formatearValor, rutasUnicas } from '../utils/envios';
 import type { PrefillEncomienda } from './NuevaEncomiendaScreen';
 
 const PESTAÑAS: { estado: EstadoEncomienda; label: string }[] = [
@@ -46,6 +47,7 @@ export function HomeRemitenteScreen() {
 
   const { data, loading, error, reload } = useAsync(() => encomiendasApi.listar());
   const grupos = agruparEncomiendas(data ?? []);
+  const viajeros = useViajerosDeTomadas(data ?? []);
   const [pestaña, setPestaña] = useState<EstadoEncomienda>('disponible');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -149,6 +151,14 @@ export function HomeRemitenteScreen() {
                     </StatusBadge>
                   </div>
                   <p className="px-4 text-body-sm text-on-surface-variant">{e.observaciones || 'Sin observaciones'}</p>
+                  {(e.estado === 'tomada' || e.estado === 'recibida') && (
+                    <p className="flex items-center gap-1.5 px-4 text-label-md text-on-surface">
+                      <Icon name="flight" className="text-[16px] text-air" />
+                      {e.viajeroId && viajeros[e.viajeroId]
+                        ? `Lo lleva ${viajeros[e.viajeroId].nombreUsuario || 'un viajero'} · viaja el ${formatearFecha(viajeros[e.viajeroId].fechaViaje)}`
+                        : 'Un viajero ya tomó tu encomienda'}
+                    </p>
+                  )}
                   {e.fechaVencimiento && e.estado === 'disponible' && (
                     <p className="flex items-center gap-1 px-4 text-label-md text-muted">
                       <Icon name="calendar_today" className="text-[14px]" />
@@ -231,4 +241,33 @@ export function HomeRemitenteScreen() {
       <BottomNav rol="remitente" />
     </>
   );
+}
+
+/**
+ * Nombre y fecha del viajero que tomó cada encomienda. El backend solo guarda su uid (`viajeroId`), así que se
+ * busca en los viajes de la misma ruta (GET /api/viajes/disponibles trae el nombre). Si no aparece, la tarjeta
+ * muestra un texto genérico.
+ */
+function useViajerosDeTomadas(encomiendas: Encomienda[]): Record<string, ViajeDisponible> {
+  const [viajeros, setViajeros] = useState<Record<string, ViajeDisponible>>({});
+  useEffect(() => {
+    const conViajero = encomiendas.filter((e) => e.viajeroId && (e.estado === 'tomada' || e.estado === 'recibida'));
+    if (conViajero.length === 0) return;
+    let active = true;
+    void Promise.allSettled(rutasUnicas(conViajero).map((r) => viajesApi.disponiblesEnRuta(r.origen, r.destino))).then(
+      (resultados) => {
+        if (!active) return;
+        const mapa: Record<string, ViajeDisponible> = {};
+        for (const r of resultados) {
+          if (r.status !== 'fulfilled') continue;
+          for (const v of r.value) mapa[v.uid] ??= v;
+        }
+        setViajeros(mapa);
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [encomiendas]);
+  return viajeros;
 }
