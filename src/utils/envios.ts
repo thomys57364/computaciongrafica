@@ -25,12 +25,15 @@ export function normalizarVuelo(texto: string): string {
   return texto.trim().replace(/\s+/g, ' ').toUpperCase();
 }
 
-/** Hoy en formato YYYY-MM-DD (hora local), para el `min` del selector de fecha. */
-export function hoyISO(now = new Date()): string {
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+/**
+ * Primera fecha (YYYY-MM-DD) que se puede elegir para un viaje.
+ * El backend guarda la fecha a medianoche UTC y marca como completado lo que ya pasó. En Colombia (UTC-5),
+ * pasadas las 7 p. m. «mañana» ya es hoy en UTC, así que el viaje nacía completado. Por eso se exige
+ * una fecha posterior al día UTC actual.
+ */
+export function fechaMinimaViaje(now = new Date()): string {
+  const manana = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  return manana.toISOString().slice(0, 10);
 }
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];

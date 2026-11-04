@@ -133,10 +133,11 @@ export function validateCity(value: string, ciudades: string[], label: string): 
   return ok ? null : 'Elige una ciudad de la lista.';
 }
 
-export function validateTripDate(value: string, today: string): string | null {
+/** `minDate`: primera fecha permitida (ver fechaMinimaViaje). */
+export function validateTripDate(value: string, minDate: string): string | null {
   if (!value) return 'Selecciona la fecha del viaje.';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value))) return 'La fecha no es válida.';
-  return value < today ? 'La fecha no puede ser anterior a hoy.' : null;
+  return value < minDate ? `Elige una fecha desde el ${minDate.split('-').reverse().join('/')}.` : null;
 }
 
 export interface TripFormValues {
@@ -146,7 +147,7 @@ export interface TripFormValues {
   fechaViaje: string;
 }
 
-export function validateTrip(v: TripFormValues, ciudades: string[], today: string): FormErrors<TripFormValues> {
+export function validateTrip(v: TripFormValues, ciudades: string[], minDate: string): FormErrors<TripFormValues> {
   const sameCity =
     v.ciudadOrigen.trim() &&
     v.ciudadDestino.trim() &&
@@ -155,7 +156,7 @@ export function validateTrip(v: TripFormValues, ciudades: string[], today: strin
     numeroVuelo: validateFlightNumber(v.numeroVuelo),
     ciudadOrigen: validateCity(v.ciudadOrigen, ciudades, 'origen'),
     ciudadDestino: validateCity(v.ciudadDestino, ciudades, 'destino') ?? (sameCity ? 'El destino debe ser distinto del origen.' : null),
-    fechaViaje: validateTripDate(v.fechaViaje, today),
+    fechaViaje: validateTripDate(v.fechaViaje, minDate),
   });
 }
 

@@ -14,7 +14,7 @@ import { useAsync } from '../hooks/useAsync';
 import { useCiudades } from '../hooks/useCiudades';
 import { useForm } from '../hooks/useForm';
 import { errorMessage } from '../utils/errorMessage';
-import { hoyISO, normalizarVuelo, resolverCiudad, viajeActivo } from '../utils/envios';
+import { fechaMinimaViaje, normalizarVuelo, resolverCiudad, viajeActivo } from '../utils/envios';
 import { validateTrip, type TripFormValues } from '../utils/validation';
 
 const MENSAJE_VIAJE_ACTIVO =
@@ -28,10 +28,10 @@ export function RegistrarViajeScreen() {
   const { data: viajes } = useAsync(() => viajesApi.listar());
   const activo = useMemo(() => (viajes ? viajeActivo(viajes) : null), [viajes]);
 
-  const hoy = hoyISO();
+  const minFecha = fechaMinimaViaje();
   const { values, errors, bind, validateNow } = useForm<TripFormValues>(
     { numeroVuelo: '', ciudadOrigen: '', ciudadDestino: '', fechaViaje: '' },
-    (v) => validateTrip(v, ciudades, hoy),
+    (v) => validateTrip(v, ciudades, minFecha),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +124,7 @@ export function RegistrarViajeScreen() {
               label="Fecha del viaje"
               icon="calendar_today"
               type="date"
-              min={hoy}
+              min={minFecha}
               disabled={saving}
               error={errors.fechaViaje}
               {...bind('fechaViaje')}

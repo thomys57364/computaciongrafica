@@ -6,7 +6,7 @@ import {
   agruparEncomiendas,
   formatearFecha,
   formatearValor,
-  hoyISO,
+  fechaMinimaViaje,
   normalizarVuelo,
   resolverCiudad,
   viajeActivo,
@@ -14,7 +14,7 @@ import {
 import { validateParcel, validateTrip } from './validation';
 
 const CIUDADES = ['Bogotá', 'Madrid', 'Miami', 'Medellin'];
-const HOY = '2026-11-03';
+const MIN = '2026-11-04';
 
 describe('Utilidades de envíos', () => {
   it('resuelve ciudades ignorando tildes y mayúsculas', () => {
@@ -35,8 +35,11 @@ describe('Utilidades de envíos', () => {
     expect(formatearValor(20, 'USD')).toBe('20 USD');
   });
 
-  it('hoyISO devuelve YYYY-MM-DD con la fecha local', () => {
-    expect(hoyISO(new Date(2026, 0, 5, 23, 59))).toBe('2026-01-05');
+  it('la fecha mínima de viaje es el día siguiente en UTC', () => {
+    // 4 Nov 00:30 UTC (7:30 p. m. del 3 en Colombia): «mañana» local ya sería hoy en UTC.
+    expect(fechaMinimaViaje(new Date('2026-11-04T00:30:00Z'))).toBe('2026-11-05');
+    expect(fechaMinimaViaje(new Date('2026-11-03T15:00:00Z'))).toBe('2026-11-04');
+    expect(fechaMinimaViaje(new Date('2026-12-31T12:00:00Z'))).toBe('2027-01-01');
   });
 
   it('encuentra el viaje activo (disponible o contactado)', () => {
@@ -75,24 +78,24 @@ describe('Validación de viaje', () => {
   const ok = { numeroVuelo: 'AV 010', ciudadOrigen: 'Bogotá', ciudadDestino: 'Madrid', fechaViaje: '2026-12-01' };
 
   it('acepta un viaje válido', () => {
-    expect(validateTrip(ok, CIUDADES, HOY)).toEqual({});
+    expect(validateTrip(ok, CIUDADES, MIN)).toEqual({});
   });
 
   it('acepta vuelos sin espacio y con minúsculas', () => {
-    expect(validateTrip({ ...ok, numeroVuelo: 'aa123' }, CIUDADES, HOY).numeroVuelo).toBeUndefined();
+    expect(validateTrip({ ...ok, numeroVuelo: 'aa123' }, CIUDADES, MIN).numeroVuelo).toBeUndefined();
   });
 
   it('rechaza vuelo inválido, ciudades fuera de lista, mismo origen/destino y fechas pasadas', () => {
-    expect(validateTrip({ ...ok, numeroVuelo: '' }, CIUDADES, HOY).numeroVuelo).toBeDefined();
-    expect(validateTrip({ ...ok, numeroVuelo: 'hola' }, CIUDADES, HOY).numeroVuelo).toBeDefined();
-    expect(validateTrip({ ...ok, ciudadOrigen: 'Narnia' }, CIUDADES, HOY).ciudadOrigen).toBeDefined();
-    expect(validateTrip({ ...ok, ciudadDestino: 'bogota' }, CIUDADES, HOY).ciudadDestino).toMatch(/distinto/);
-    expect(validateTrip({ ...ok, fechaViaje: '2026-11-02' }, CIUDADES, HOY).fechaViaje).toBeDefined();
-    expect(validateTrip({ ...ok, fechaViaje: HOY }, CIUDADES, HOY).fechaViaje).toBeUndefined();
+    expect(validateTrip({ ...ok, numeroVuelo: '' }, CIUDADES, MIN).numeroVuelo).toBeDefined();
+    expect(validateTrip({ ...ok, numeroVuelo: 'hola' }, CIUDADES, MIN).numeroVuelo).toBeDefined();
+    expect(validateTrip({ ...ok, ciudadOrigen: 'Narnia' }, CIUDADES, MIN).ciudadOrigen).toBeDefined();
+    expect(validateTrip({ ...ok, ciudadDestino: 'bogota' }, CIUDADES, MIN).ciudadDestino).toMatch(/distinto/);
+    expect(validateTrip({ ...ok, fechaViaje: '2026-11-03' }, CIUDADES, MIN).fechaViaje).toBeDefined();
+    expect(validateTrip({ ...ok, fechaViaje: MIN }, CIUDADES, MIN).fechaViaje).toBeUndefined();
   });
 
   it('si la lista de ciudades no cargó acepta texto libre', () => {
-    expect(validateTrip({ ...ok, ciudadOrigen: 'Narnia' }, [], HOY).ciudadOrigen).toBeUndefined();
+    expect(validateTrip({ ...ok, ciudadOrigen: 'Narnia' }, [], MIN).ciudadOrigen).toBeUndefined();
   });
 });
 
