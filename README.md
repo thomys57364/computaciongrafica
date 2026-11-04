@@ -57,6 +57,9 @@ Contiene la paleta (navy `#0B1240`, vino `#A50012`, azul `air`, fondos, bordes, 
 |---|---|
 | `apiClient.ts` | **El corazón de las llamadas HTTP.** Ver el detalle debajo de la tabla. |
 | `usersApi.ts` | Contiene `register` (POST `/api/users/register`), `get` (GET `/api/users/:uid`) y `update` (PUT). También `lookupProfile()`, que decide si el usuario ya tiene perfil ("complete") o le falta ("missing"). |
+| `viajesApi.ts` | `crear`, `listar` y `cambiarEstado` sobre `/api/viajes`. |
+| `encomiendasApi.ts` | `crear`, `listar`, `disponiblesEnRuta` y `cambiarEstado` sobre `/api/encomiendas`. |
+| `ciudadesApi.ts` | GET `/api/ciudades/ciudades` (pública, en caché) para el autocompletado de ciudades. |
 | `paisesApi.ts` | GET `/api/ciudades/paises`. Guarda la lista en memoria para no pedirla dos veces. |
 | `serverWake.ts` | Detecta cuándo una petición tarda más de 4 s. Con eso se muestra el aviso "El servidor está despertando" (Render gratis tarda 30-60 s). |
 
@@ -114,7 +117,11 @@ Sesión completa     → /rol → /home/remitente | /home/viajero
 | `ForgotPasswordScreen` | `/recuperar` | Pide el correo y envía el enlace. No revela si el correo existe. |
 | `ResetSentScreen` | `/recuperar/enviado` | "Revisa tu correo", con un botón para reenviar que espera 30 s entre intentos. |
 | `RoleSelectionScreen` | `/rol` | Elegir entre Remitente y Viajero. |
-| `HomePlaceholderScreen` | `/home/...` | Home **temporal**, con los botones "Editar perfil" y "Cambiar de rol". |
+| `HomeViajeroScreen` | `/home/viajero` | Viaje activo del viajero y encomiendas disponibles en su ruta (diseño Stitch «Home del Viajero»). |
+| `RegistrarViajeScreen` | `/viajero/viaje/nuevo` | Formulario de viaje: número de vuelo, origen, destino y fecha. `POST /api/viajes`; el backend solo admite un viaje activo. |
+| `MisViajesScreen` | `/viajero/viajes` | Todos los viajes con su estado; permite marcar el activo como completado o cancelarlo (`PATCH /api/viajes/:id/estado`). |
+| `HomeRemitenteScreen` | `/home/remitente` | Encomiendas del remitente en pestañas (Disponibles, Tomadas, Vencidas, Recibidas), con «Marcar recibida» y «Republicar». |
+| `NuevaEncomiendaScreen` | `/remitente/encomienda/nueva` | Formulario de encomienda: ruta, observaciones, moneda (USD/COP) y valor. `POST /api/encomiendas`. |
 | `EditProfileScreen` | `/perfil/editar` | Edita los datos (PUT solo con los campos que cambiaron) y tiene los enlaces a seguridad. |
 | `ChangePasswordScreen` | `/perfil/contrasena` | Pide la contraseña actual, la nueva y su confirmación. |
 | `ChangeEmailScreen` | `/perfil/correo` | Pide la contraseña actual y el correo nuevo, y envía un enlace de verificación. |
@@ -134,6 +141,10 @@ Sesión completa     → /rol → /home/remitente | /home/viajero
 - **Estructura:**
   - `Screen` (el contenedor de cada pantalla) y `TopBar` (la barra superior con flecha atrás).
   - `Divider` y `Chip`.
+- **Viajes y encomiendas:**
+  - `CityField` (autocompletado con `<datalist>`), `TextAreaField` y `SegmentedControl`.
+  - `SectionCard`, `RouteStrip`, `StatusBadge` y `LoadState`/`EmptyState`.
+  - `HomeHeader` y `BottomNav` (barra inferior según el rol).
 - **Gráficos:**
   - `Logo` es **provisional**; reemplázalo por el logo real.
   - `GoogleIcon`, `Icon` (los íconos de Material), `Avatar` (las iniciales del usuario) y `EmailIllustration`.
@@ -142,6 +153,7 @@ Sesión completa     → /rol → /home/remitente | /home/viajero
 
 - `useForm` maneja los valores del formulario, los errores por campo y la validación.
 - `usePaises` carga la lista de países, con sus estados de carga y error.
+- `useAsync` carga datos al abrir la pantalla y ofrece `reload`; `useCiudades` carga las ciudades; `useFlash` lee el mensaje de éxito que deja la pantalla anterior.
 - `useCooldown` lleva la cuenta regresiva de "Reenviar en 30 s".
 
 ### `utils/`: funciones de apoyo
@@ -152,6 +164,7 @@ Sesión completa     → /rol → /home/remitente | /home/viajero
 | `paises.ts` | Ordena la lista de países con Colombia primero. |
 | `profileDiff.ts` | Compara el perfil original con el editado para enviar solo lo que cambió. |
 | `roleStorage.ts` | Guarda en el navegador el rol elegido por cada usuario (`lapticon:rol:<uid>`). |
+| `envios.ts` | Fechas en UTC, valores, búsqueda de ciudades sin tildes, viaje activo y agrupación de encomiendas por estado. |
 | `errorMessage.ts` | Convierte cualquier error en un mensaje amigable en español. |
 | `*.test.ts` | Las 15 pruebas, que corren con `npm test`. |
 

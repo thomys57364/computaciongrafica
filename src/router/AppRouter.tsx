@@ -4,9 +4,13 @@ import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
 import { CompleteProfileScreen } from '../screens/CompleteProfileScreen';
 import { EditProfileScreen } from '../screens/EditProfileScreen';
 import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
-import { HomePlaceholderScreen } from '../screens/HomePlaceholderScreen';
+import { HomeRemitenteScreen } from '../screens/HomeRemitenteScreen';
+import { HomeViajeroScreen } from '../screens/HomeViajeroScreen';
 import { LoginScreen } from '../screens/LoginScreen';
+import { MisViajesScreen } from '../screens/MisViajesScreen';
+import { NuevaEncomiendaScreen } from '../screens/NuevaEncomiendaScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
+import { RegistrarViajeScreen } from '../screens/RegistrarViajeScreen';
 import { ResetSentScreen } from '../screens/ResetSentScreen';
 import { RoleSelectionScreen } from '../screens/RoleSelectionScreen';
 import { EntryRedirect, Gate } from './guards';
@@ -15,7 +19,8 @@ import { EntryRedirect, Gate } from './guards';
  * Mapa de navegación:
  *   sin sesión       → /login ⇄ /registro, /recuperar → /recuperar/enviado
  *   sesión sin perfil → /completar-perfil
- *   sesión + perfil  → /rol → /home/remitente | /home/viajero
+ *   sesión + perfil  → /rol → /home/remitente → /remitente/encomienda/nueva
+ *                          → /home/viajero   → /viajero/viajes, /viajero/viaje/nuevo
  *                      /perfil/editar → /perfil/contrasena | /perfil/correo
  *   cualquiera       → /recuperar (con sesión se llega desde "¿La olvidaste?")
  */
@@ -41,8 +46,11 @@ export function AppRouter() {
 
         <Route element={<Gate allow={['ready']} />}>
           <Route path="/rol" element={<RoleSelectionScreen />} />
-          <Route path="/home/remitente" element={<HomePlaceholderScreen rol="remitente" />} />
-          <Route path="/home/viajero" element={<HomePlaceholderScreen rol="viajero" />} />
+          <Route path="/home/remitente" element={<HomeRemitenteScreen />} />
+          <Route path="/remitente/encomienda/nueva" element={<NuevaEncomiendaScreen />} />
+          <Route path="/home/viajero" element={<HomeViajeroScreen />} />
+          <Route path="/viajero/viajes" element={<MisViajesScreen />} />
+          <Route path="/viajero/viaje/nuevo" element={<RegistrarViajeScreen />} />
           <Route path="/perfil/editar" element={<EditProfileScreen />} />
           {/* Contraseña y correo redirigen a /perfil/editar si la cuenta no tiene proveedor password. */}
           <Route path="/perfil/contrasena" element={<ChangePasswordScreen />} />
