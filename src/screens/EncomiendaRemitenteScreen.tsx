@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { ConfirmInline } from '../components/ConfirmInline';
 import { Icon } from '../components/Icon';
 import { LoadState } from '../components/LoadState';
+import { PersonaCard } from '../components/PersonaCard';
 import { RouteStrip } from '../components/RouteStrip';
 import { Screen } from '../components/Screen';
 import { StatusBadge, type BadgeTone } from '../components/StatusBadge';
@@ -128,24 +129,12 @@ export function EncomiendaRemitenteScreen() {
             </section>
 
             {(e.estado === 'tomada' || e.estado === 'recibida') && (
-              <section className="flex flex-col gap-3 rounded-card bg-card p-space-md shadow-card">
-                <span className="text-label-caps font-bold uppercase text-on-surface-variant">
-                  {e.estado === 'recibida' ? 'Viajero responsable' : 'Viajero asignado'}
-                </span>
-                <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-navy text-white">
-                    <Icon name="person" className="text-[24px]" />
-                  </span>
-                  <div className="flex min-w-0 flex-col">
-                    <span className="truncate text-title-md text-on-surface">
-                      {viajero?.nombreUsuario || 'Un viajero de Lapticon'}
-                    </span>
-                    <span className="text-label-md text-on-surface-variant">
-                      {viajero ? `Viaja el ${formatearFecha(viajero.fechaViaje)}` : 'Tomó tu encomienda para su viaje'}
-                    </span>
-                  </div>
-                </div>
-              </section>
+              <PersonaCard
+                etiqueta={e.estado === 'recibida' ? 'Viajero responsable' : 'Viajero asignado'}
+                nombre={viajero?.nombreUsuario || 'Un viajero de Lapticon'}
+                detalle={viajero ? `Viaja el ${formatearFecha(viajero.fechaViaje)}` : 'Tomó tu encomienda para su viaje'}
+                uid={e.viajeroId}
+              />
             )}
 
             <section className="flex flex-col gap-3 rounded-card bg-card p-space-md shadow-card">

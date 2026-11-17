@@ -1,11 +1,14 @@
-import { consultarRuta } from '../utils/envios';
+import { consultarRuta, unirEncomiendas } from '../utils/envios';
 import { ApiError, apiClient } from './apiClient';
 
 export type EstadoEncomienda = 'disponible' | 'tomada' | 'vencida' | 'recibida';
 
 export interface Encomienda {
   _id: string;
-  uid: string;
+  /** uid del remitente. GET /api/encomiendas/disponibles no lo trae; /buscar y GET /api/encomiendas sí. */
+  uid?: string;
+  /** Nombre de quien publicó la encomienda. Solo lo traen /disponibles y /buscar (vista del viajero). */
+  remitenteNombre?: string;
   ciudadOrigen: string;
   ciudadDestino: string;
   observaciones?: string;
@@ -94,11 +97,12 @@ export const encomiendasApi = {
     if (buscadas === null && sueltas === null) throw new Error('No se pudieron cargar las encomiendas.');
     const tomadas = (buscadas ?? []).filter((x) => x.tomada).map((x) => x.e);
     const ids = new Set(tomadas.map((e) => e._id));
-    const disponibles = new Map<string, Encomienda>();
-    for (const e of [...(buscadas ?? []).filter((x) => !x.tomada).map((x) => x.e), ...(sueltas ?? [])]) {
-      if (e.estado === 'disponible' && !ids.has(e._id)) disponibles.set(e._id, e);
-    }
-    return { disponibles: [...disponibles.values()], tomadas };
+    // Primero las de /buscar: traen el uid del remitente, que /disponibles omite.
+    const disponibles = unirEncomiendas([
+      ...(buscadas ?? []).filter((x) => !x.tomada).map((x) => x.e),
+      ...(sueltas ?? []),
+    ]).filter((e) => e.estado === 'disponible' && !ids.has(e._id));
+    return { disponibles, tomadas };
   },
   /** PUT /api/encomiendas/tomar/:id — el viajero toma una encomienda disponible. */
   tomar: (id: string) => apiClient.put<unknown>(`/api/encomiendas/tomar/${encodeURIComponent(id)}`, undefined),

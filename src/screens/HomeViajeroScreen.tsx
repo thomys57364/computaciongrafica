@@ -173,6 +173,12 @@ function EncomiendaCard({ e, onOpen, propia }: { e: Encomienda; onOpen: () => vo
           </span>
           {propia && <span className="w-fit rounded-full bg-chip px-2 py-0.5 text-label-caps uppercase text-navy">Tu encomienda</span>}
           <p className="text-body-md leading-snug text-on-surface">{e.observaciones || 'Sin observaciones'}</p>
+          {!propia && e.remitenteNombre?.trim() && (
+            <span className="flex items-center gap-1 text-label-md text-on-surface-variant">
+              <Icon name="person" className="text-[16px] text-navy-soft" />
+              <span className="truncate">Publicada por {e.remitenteNombre.trim()}</span>
+            </span>
+          )}
         </div>
         <span className="shrink-0 text-headline-sm font-bold text-wine">{formatearValor(e.valor, e.moneda)}</span>
       </div>

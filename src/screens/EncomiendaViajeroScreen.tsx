@@ -7,6 +7,7 @@ import { Alert } from '../components/Alert';
 import { Button } from '../components/Button';
 import { Icon } from '../components/Icon';
 import { LoadState } from '../components/LoadState';
+import { PersonaCard } from '../components/PersonaCard';
 import { RouteStrip } from '../components/RouteStrip';
 import { Screen } from '../components/Screen';
 import { StatusBadge } from '../components/StatusBadge';
@@ -142,6 +143,13 @@ export function EncomiendaViajeroScreen() {
                 </p>
               )}
             </section>
+
+            <PersonaCard
+              etiqueta={e.estado === 'disponible' ? 'Publicado por' : 'Remitente'}
+              nombre={e.remitenteNombre?.trim() || 'Un remitente de Lapticon'}
+              detalle={e.estado === 'disponible' ? 'Quien envía esta encomienda' : 'Coordina con esta persona la entrega'}
+              uid={e.uid}
+            />
 
             {e.estado === 'disponible' && (
               <>
