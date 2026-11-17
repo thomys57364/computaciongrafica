@@ -133,6 +133,16 @@ export function rutasUnicas(lista: Pick<Encomienda, 'ciudadOrigen' | 'ciudadDest
   return rutas;
 }
 
+/**
+ * Junta encomiendas que llegan de varias consultas sin perder datos. Si la misma encomienda aparece dos veces,
+ * se queda la primera y solo se le completan los campos que no traía (p. ej. /disponibles omite el `uid`).
+ */
+export function unirEncomiendas(lista: Encomienda[]): Encomienda[] {
+  const porId = new Map<string, Encomienda>();
+  for (const e of lista) porId.set(e._id, { ...e, ...porId.get(e._id) });
+  return [...porId.values()];
+}
+
 /** Estado de una encomienda que el remitente eliminó (el backend no las borra). */
 export const ESTADO_ELIMINADA = 'cancelada';
 

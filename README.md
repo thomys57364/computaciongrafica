@@ -61,6 +61,7 @@ Contiene la paleta (navy `#0B1240`, vino `#A50012`, azul `air`, fondos, bordes, 
 | `encomiendasApi.ts` | `crear`, `listar`, `disponiblesEnRuta` y `cambiarEstado` sobre `/api/encomiendas`. |
 | `ciudadesApi.ts` | GET `/api/ciudades/ciudades` (pública, en caché) para el autocompletado de ciudades. |
 | `paisesApi.ts` | GET `/api/ciudades/paises`. Guarda la lista en memoria para no pedirla dos veces. |
+| `ratingsApi.ts` | GET `/api/ratings/:uid` (pública): total y promedio de calificaciones de un usuario. |
 | `serverWake.ts` | Detecta cuándo una petición tarda más de 4 s. Con eso se muestra el aviso "El servidor está despertando" (Render gratis tarda 30-60 s). |
 
 Lo que hace `apiClient.ts` en cada petición:
@@ -125,8 +126,8 @@ El modo se cambia con el selector «Remitente | Viajero» del encabezado de los 
 | `RegistrarViajeScreen` | `/viajero/viajes/nuevo` | Formulario de viaje: número de vuelo, origen, destino y fecha. `POST /api/viajes`; el backend solo admite un viaje activo (su 400 se muestra con un mensaje claro). |
 | `MisViajesScreen` | `/viajero/viajes` | Todos los viajes con su estado; permite marcar el activo como completado o cancelarlo (`PATCH /api/viajes/:id/estado`). |
 | `HomeRemitenteScreen` | `/remitente` | Encomiendas del remitente en pestañas (Disponibles, Tomadas, Vencidas, Recibidas), con «Editar», «Eliminar», «Marcar recibida» y «Republicar». «Eliminar» pasa la encomienda a `cancelada` (`PUT /api/encomiendas/:id/estado`; el backend no tiene DELETE) y deja de mostrarse. |
-| `EncomiendaViajeroScreen` | `/viajero/encomiendas/:id` | Detalle de una encomienda para el viajero, con «Tomar encomienda» (`PUT /api/encomiendas/tomar/:id`). Al recargar la busca de nuevo en la ruta del viaje activo (`/buscar` + `/disponibles`); si ya no está, vuelve al Home con un aviso. |
-| `EncomiendaRemitenteScreen` | `/remitente/encomiendas/:id` | Detalle para el remitente (diseños «Tomada» y «Entregada»): viajero asignado, valor y acciones (editar, marcar recibida, republicar). Al recargar la busca en `GET /api/encomiendas`. |
+| `EncomiendaViajeroScreen` | `/viajero/encomiendas/:id` | Detalle de una encomienda para el viajero: quién la publicó (nombre del remitente, que el backend manda como `remitenteNombre`, y su calificación) y el botón «Tomar encomienda» (`PUT /api/encomiendas/tomar/:id`). Al recargar la busca de nuevo en la ruta del viaje activo (`/buscar` + `/disponibles`); si ya no está, vuelve al Home con un aviso. |
+| `EncomiendaRemitenteScreen` | `/remitente/encomiendas/:id` | Detalle para el remitente (diseños «Tomada» y «Entregada»): viajero asignado con su calificación, valor y acciones (editar, marcar recibida, republicar). Al recargar la busca en `GET /api/encomiendas`. |
 | `ViajerosDisponiblesScreen` | `/remitente/viajeros` | Viajes activos de otros usuarios en una ruta (`GET /api/viajes/disponibles`), con atajos a las rutas de tus encomiendas. |
 | `NuevaEncomiendaScreen` | `/remitente/encomiendas/nueva` y `/remitente/encomiendas/:id/editar` | Formulario de encomienda: ruta, observaciones, moneda (USD/COP) y valor. `POST /api/encomiendas`. |
 | `EditProfileScreen` | `/perfil` | «Mi perfil»: datos (PUT solo con los campos que cambiaron), enlaces a seguridad y cerrar sesión. |
@@ -152,6 +153,7 @@ El modo se cambia con el selector «Remitente | Viajero» del encabezado de los 
   - `CityField` (autocompletado con `<datalist>`), `TextAreaField` y `SegmentedControl`.
   - `SectionCard`, `RouteStrip`, `StatusBadge` y `LoadState`/`EmptyState`.
   - `HomeHeader` y `BottomNav` (barra inferior según el rol).
+  - `PersonaCard`: la otra persona de la encomienda (el remitente para el viajero, el viajero para el remitente), con su calificación.
 - **Gráficos:**
   - `Logo` es **provisional**; reemplázalo por el logo real.
   - `GoogleIcon`, `Icon` (los íconos de Material), `Avatar` (las iniciales del usuario) y `EmailIllustration`.
@@ -162,6 +164,7 @@ El modo se cambia con el selector «Remitente | Viajero» del encabezado de los 
 - `usePaises` carga la lista de países, con sus estados de carga y error.
 - `useAsync` carga datos al abrir la pantalla y ofrece `reload`; `useCiudades` carga las ciudades; `useFlash` lee el mensaje de éxito que deja la pantalla anterior.
 - `useCooldown` lleva la cuenta regresiva de "Reenviar en 30 s".
+- `useCalificacion` trae la calificación de un usuario; si falla, la tarjeta solo omite esa línea.
 
 ### `utils/`: funciones de apoyo
 
@@ -171,9 +174,10 @@ El modo se cambia con el selector «Remitente | Viajero» del encabezado de los 
 | `paises.ts` | Ordena la lista de países con Colombia primero. |
 | `profileDiff.ts` | Compara el perfil original con el editado para enviar solo lo que cambió. |
 | `roleStorage.ts` | Guarda en el navegador el rol elegido por cada usuario (`lapticon:rol:<uid>`). |
-| `envios.ts` | Fechas en UTC, valores, búsqueda de ciudades sin tildes, viaje activo y agrupación de encomiendas por estado. |
+| `envios.ts` | Fechas en UTC, valores, búsqueda de ciudades sin tildes, viaje activo, agrupación de encomiendas por estado y `unirEncomiendas` (junta `/buscar` y `/disponibles` sin perder el `uid` del remitente). |
+| `calificaciones.ts` | Lee la respuesta de `/api/ratings/:uid` y arma el texto «4,7 · 3 calificaciones». |
 | `errorMessage.ts` | Convierte cualquier error en un mensaje amigable en español. |
-| `*.test.ts` | Las 15 pruebas, que corren con `npm test`. |
+| `*.test.ts` | Las pruebas, que corren con `npm test` (necesitan el `.env`). |
 
 ---
 
