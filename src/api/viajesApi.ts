@@ -1,5 +1,6 @@
 import { consultarRuta, viajeDeRespuesta } from '../utils/envios';
 import { ApiError, apiClient } from './apiClient';
+import { asList } from './respuestas';
 
 export type EstadoViaje = 'disponible' | 'completado' | 'cancelado' | 'contactado';
 
@@ -19,13 +20,6 @@ export interface NuevoViaje {
   ciudadDestino: string;
   /** Fecha en formato YYYY-MM-DD. */
   fechaViaje: string;
-}
-
-/** El backend devuelve un arreglo; se tolera también { viajes: [...] } por si cambia. */
-function asList<T>(data: unknown, key: string): T[] {
-  if (Array.isArray(data)) return data as T[];
-  const inner = (data as Record<string, unknown> | null)?.[key];
-  return Array.isArray(inner) ? (inner as T[]) : [];
 }
 
 /** Viaje disponible visto por un remitente (no trae id ni estado; sí el nombre del viajero). */

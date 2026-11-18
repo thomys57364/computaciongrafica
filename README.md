@@ -62,6 +62,7 @@ Contiene la paleta (navy `#0B1240`, vino `#A50012`, azul `air`, fondos, bordes, 
 | `ciudadesApi.ts` | GET `/api/ciudades/ciudades` (pública, en caché) para el autocompletado de ciudades. |
 | `paisesApi.ts` | GET `/api/ciudades/paises`. Guarda la lista en memoria para no pedirla dos veces. |
 | `ratingsApi.ts` | GET `/api/ratings/:uid` (pública): total y promedio de calificaciones de un usuario. |
+| `respuestas.ts` | `asList`: lee la lista de una respuesta, venga como arreglo o envuelta (`{ viajes: [...] }`). La usan `viajesApi` y `encomiendasApi`. |
 | `serverWake.ts` | Detecta cuándo una petición tarda más de 4 s. Con eso se muestra el aviso "El servidor está despertando" (Render gratis tarda 30-60 s). |
 
 Lo que hace `apiClient.ts` en cada petición:
