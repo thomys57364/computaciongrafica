@@ -1,5 +1,6 @@
 import { consultarRuta, unirEncomiendas } from '../utils/envios';
 import { ApiError, apiClient } from './apiClient';
+import { asList } from './respuestas';
 
 export type EstadoEncomienda = 'disponible' | 'tomada' | 'vencida' | 'recibida';
 
@@ -26,12 +27,6 @@ export interface NuevaEncomienda {
   observaciones?: string;
   moneda: string;
   valor: number;
-}
-
-function asList<T>(data: unknown, key: string): T[] {
-  if (Array.isArray(data)) return data as T[];
-  const inner = (data as Record<string, unknown> | null)?.[key];
-  return Array.isArray(inner) ? (inner as T[]) : [];
 }
 
 /** GET /api/encomiendas/disponibles?origen=&destino= — encomiendas disponibles en una ruta (endpoint documentado). */
