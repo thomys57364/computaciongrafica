@@ -14,7 +14,7 @@ Lapticon es una app web (PWA) que conecta a personas que quieren enviar una enco
 
 ![Jira 1](<photos/jira1.jpeg>)
 
-![Jira 2](<phtos/jira2.jpeg>)
+![Jira 2](<photos/jira2.jpeg>)
 
 ### Figma
 
