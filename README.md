@@ -1,3 +1,9 @@
+# Nombres del Grupo
+Amado Gutierrez Jullians Mauricio
+Castillo Castro Thomas Leonardo 
+Chica Parra Mateo Antonio
+
+
 # Lapticon
 
 Lapticon es una app web (PWA) que conecta a personas que quieren enviar una encomienda con viajeros que ya van en camino a ese destino. Este documento explica cómo está armado el proyecto: dónde vive cada cosa y para qué sirve. En total son unas 3.300 líneas dentro de `src/`.
