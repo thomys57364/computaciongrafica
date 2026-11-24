@@ -2,6 +2,13 @@
 
 Lapticon es una app web (PWA) que conecta a personas que quieren enviar una encomienda con viajeros que ya van en camino a ese destino. Este documento explica cómo está armado el proyecto: dónde vive cada cosa y para qué sirve. En total son unas 3.300 líneas dentro de `src/`.
 
+## Criterios de entrega
+* Video (5 minutos): completado
+* Registro de usuarios: completado
+* Registro de encomienda: completado
+* Registro de viaje: completado
+* UX/UI (se evalúa sobre las funcionalidades anteriores): Completo
+
 ---
 
 ## Enlaces del proyecto
