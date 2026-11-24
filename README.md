@@ -9,6 +9,9 @@ Lapticon es una app web (PWA) que conecta a personas que quieren enviar una enco
 * Registro de viaje: completado
 * UX/UI (se evalúa sobre las funcionalidades anteriores): Completo
 
+## Observaciones sobre funcionalidades pendientes, si aplica:
+No funciona eliminar Encomiendas por restricción del Back y tampoco deja tener interacciones entre rol de Encomiendas y Viajero
+
 ---
 
 ## Enlaces del proyecto
