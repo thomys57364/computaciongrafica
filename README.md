@@ -1,7 +1,7 @@
 # Nombres del Grupo
-Amado Gutierrez Jullians Mauricio
-Castillo Castro Thomas Leonardo
-Chica Parra Mateo Antonio
+- Amado Gutierrez Jullians Mauricio
+- Castillo Castro Thomas Leonardo
+- Chica Parra Mateo Antonio
 
 
 # Lapticon
