@@ -6,23 +6,23 @@ Lapticon es una app web (PWA) que conecta a personas que quieren enviar una enco
 
 ## Enlaces del proyecto
 
-- Video de presentación (YouTube): [PEGAR AQUÍ EL LINK](https://youtu.be/acfuO6u_gLs)
-- Tablero en Jira: [PEGAR AQUÍ EL LINK](https://academia-team-r8egh69r.atlassian.net/jira/software/projects/SCRUM/boards/1/timeline?jql=assignee+%3D+empty&atlOrigin=eyJpIjoiYTA3YjZiNjMxOWNhNDNhYmJiY2U1YzdhYjQ3ZjE5MTUiLCJwIjoiaiJ9)
-- Diseño en Figma: [PEGAR AQUÍ EL LINK](https://www.figma.com/design/zyyvzUzdnDSOjtc7hZ6YjA/login?node-id=0-1&t=3AIC2fHPZ87WJuHU-1)
+- [Video de presentación](https://youtu.be/acfuO6u_gLs)
+- [Tablero en Jira](https://academia-team-r8egh69r.atlassian.net/jira/software/projects/SCRUM/boards/1/timeline?jql=assignee+%3D+empty&atlOrigin=eyJpIjoiYTA3YjZiNjMxOWNhNDNhYmJiY2U1YzdhYjQ3ZjE5MTUiLCJwIjoiaiJ9)
+- [Diseño en Figma](https://www.figma.com/design/zyyvzUzdnDSOjtc7hZ6YjA/login?node-id=0-1&t=3AIC2fHPZ87WJuHU-1)
 
 ### Jira
 
-![Jira 1](<photos/Jira 1.png>)
+![Jira 1](<photos/jira1.jpeg>)
 
-![Jira 2](<phtos/Jira 2.png>)
+![Jira 2](<phtos/jira2.jpeg>)
 
 ### Figma
 
-![Figma 1](<photos/Figma 1.png>)
+![Figma 1](<photos/figma1.jpeg>)
 
-![Figma 2](<photos/Figma 2.png>)
+![Figma 2](<photos/figma2.jpeg>)
 
-![Figma 3](<photos/Figma 2.png>)
+![Figma 3](<photos/figma3.jpeg>)
 
 ---
 
